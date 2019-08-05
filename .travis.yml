@@ -30,8 +30,8 @@ before_install:
   - touch $HOME/.android/repositories.cfg
   - yes | sdkmanager "platforms;android-$ANDROID_API_LEVEL"
   - yes | sdkmanager "build-tools;$ANDROID_BUILD_TOOLS_VERSION"
-  - sdkmanager tools
-  - sdkmanager "system-images;android-18;default;armeabi-v7a"
+  - yes | sdkmanager tools
+  - yes | sdkmanager "system-images;android-EMULATOR_API_LEVEL;default;armeabi-v7a"
   - echo no | avdmanager create avd --force -n test -k "system-images;android-$EMULATOR_API_LEVEL;default;armeabi-v7a"
   - $ANDROID_HOME/emulator/emulator -avd test -no-audio -no-window &
 
