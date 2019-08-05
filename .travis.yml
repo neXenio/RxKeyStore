@@ -3,8 +3,9 @@ dist: trusty
 
 env:
   global:
-    - ANDROID_API_LEVEL=25
-    - ANDROID_BUILD_TOOLS_VERSION=25.0.2
+    - ANDROID_API_LEVEL=28
+    - ANDROID_BUILD_TOOLS_VERSION=28.0.3
+    - ANDROID_ABI=armeabi-v7a
 
 android:
 
@@ -25,7 +26,9 @@ android:
     - 'google-gdk-license-.+'
 
 before_install:
+  - touch $HOME/.android/repositories.cfg
   - yes | sdkmanager "platforms;android-$ANDROID_API_LEVEL"
+  - yes | sdkmanager "build-tools;$ANDROID_BUILD_TOOLS_VERSION"
 
 # Emulator Management: Create, Start and Wait
 before_script:
