@@ -30,14 +30,14 @@ before_install:
   - touch $HOME/.android/repositories.cfg
   - yes | sdkmanager "platforms;android-$ANDROID_API_LEVEL"
   - yes | sdkmanager "build-tools;$ANDROID_BUILD_TOOLS_VERSION"
+  - sdkmanager tools
+  - sdkmanager "system-images;android-18;default;armeabi-v7a"
+  - echo no | avdmanager create avd --force -n test -k "system-images;android-$EMULATOR_API_LEVEL;default;armeabi-v7a"
+  - $ANDROID_HOME/emulator/emulator -avd test -no-audio -no-window &
 
 before_script:
-  - android list target
-  - android list sdk --extended --no-ui --all
-  - echo no | android create avd --force -n test -t android-$EMULATOR_API_LEVEL -c 100M
-  - emulator -avd test -no-audio -no-window &
   - android-wait-for-emulator
-  - adb shell input keyevent 82 &
+  - adb shell input keyevent 82
 
 script:
   - android list target
