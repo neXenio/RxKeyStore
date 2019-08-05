@@ -5,7 +5,7 @@ jdk: oraclejdk8
 env:
   global:
     - ANDROID_API_LEVEL=28
-    - EMULATOR_API_LEVEL=28
+    - EMULATOR_API_LEVEL=25
     - ANDROID_BUILD_TOOLS_VERSION=28.0.3
 
 android:
@@ -30,7 +30,7 @@ before_install:
   - touch $HOME/.android/repositories.cfg
   - yes | sdkmanager "platforms;android-$ANDROID_API_LEVEL"
   - yes | sdkmanager "build-tools;$ANDROID_BUILD_TOOLS_VERSION"
-  - yes | sdkmanager tools
+  #- yes | sdkmanager tools
   - yes | sdkmanager "system-images;android-$EMULATOR_API_LEVEL;default;armeabi-v7a"
   - echo no | avdmanager create avd --force -n test -k "system-images;android-$EMULATOR_API_LEVEL;default;armeabi-v7a"
   - $ANDROID_HOME/emulator/emulator -avd test -no-audio -no-window &
