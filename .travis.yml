@@ -40,11 +40,5 @@ script:
   - ./gradlew test -PdisablePreDex --stacktrace
   - ./gradlew connectedDebugAndroidTest -PdisablePreDex --stacktrace
 
-#after_success:
-#  - bash <(curl -s https://codecov.io/bash)
-
-before_install:
-  - pip install --user codecov
-
 after_success:
-  - codecov
+  - bash <(curl -s https://codecov.io/bash)
