@@ -4,7 +4,6 @@ android {
     compileSdkVersion 29
     buildToolsVersion "29.0.0"
 
-
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 29
@@ -23,6 +22,12 @@ android {
         debug {
             testCoverageEnabled true
         }
+    }
+
+    // This enables long timeouts required on slow environments, e.g. Travis
+    adbOptions {
+        timeOutInMs 10 * 60 * 1000  // 10 minutes
+        installOptions "-d","-t"
     }
 
     compileOptions {
