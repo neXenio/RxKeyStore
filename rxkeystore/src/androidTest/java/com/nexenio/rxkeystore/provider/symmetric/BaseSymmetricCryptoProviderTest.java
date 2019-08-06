@@ -1,5 +1,7 @@
 package com.nexenio.rxkeystore.provider.symmetric;
 
+import android.util.Base64;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
@@ -13,7 +15,6 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Base64;
 
 import androidx.annotation.NonNull;
 import io.reactivex.Completable;
@@ -40,7 +41,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCryptoProvider
 
     @Test
     public void encrypt_validData_emitsEncryptedData() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         symmetricCryptoProvider.generateKey(ALIAS_NEW, context)
                 .flatMap(key -> symmetricCryptoProvider.encrypt(unencryptedBytes, key)
@@ -57,7 +58,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCryptoProvider
      */
     @Test
     public void encrypt_subsequentCallsWithSameKey_emitsDistinctData() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         Single<byte[]> getEncryptedBytesSingle = symmetricCryptoProvider.getKey(ALIAS_DEFAULT)
                 .flatMap(key -> symmetricCryptoProvider.encrypt(unencryptedBytes, key))
@@ -70,7 +71,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCryptoProvider
 
     @Test
     public void decrypt_validData_emitsDecryptedData() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         symmetricCryptoProvider.generateKey(ALIAS_NEW, context)
                 .flatMap(key -> symmetricCryptoProvider.encrypt(unencryptedBytes, key)

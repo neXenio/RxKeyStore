@@ -1,5 +1,7 @@
 package com.nexenio.rxkeystore.provider.asymmetric;
 
+import android.util.Base64;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
@@ -13,7 +15,6 @@ import java.security.KeyPair;
 import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Objects;
 
 import javax.crypto.IllegalBlockSizeException;
@@ -43,7 +44,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void encrypt_validData_emitsEncryptedData() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
@@ -71,7 +72,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
      */
     @Test
     public void encrypt_subsequentCallsWithSameKey_emitsDistinctData() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         Single<byte[]> getEncryptedBytesSingle = asymmetricCryptoProvider.getPublicKey(ALIAS_DEFAULT)
                 .flatMap(publicKey -> asymmetricCryptoProvider.encrypt(unencryptedBytes, publicKey))
@@ -84,7 +85,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void decrypt_validData_emitsDecryptedData() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
@@ -105,7 +106,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void sign_validData_emitsSignature() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, keyPair.getPrivate())
@@ -116,7 +117,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void sign_subsequentCallsWithSameKey_emitsSameSignature() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         Single<byte[]> signSingle = asymmetricCryptoProvider.getPrivateKey(ALIAS_DEFAULT)
                 .flatMap(privateKey -> asymmetricCryptoProvider.sign(unencryptedBytes, privateKey));
@@ -128,7 +129,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void verify_validSignature_completes() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMapCompletable(keyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, keyPair.getPrivate())
@@ -139,7 +140,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void verify_invalidSignature_emitsError() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMapCompletable(keyPair -> asymmetricCryptoProvider.verify(unencryptedBytes, unencryptedBytes, keyPair.getPublic()))
@@ -149,7 +150,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void verify_validSignatureFromWrongKey_emitsError() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMapCompletable(keyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, keyPair.getPrivate())
@@ -160,7 +161,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void getVerificationResult_validSignature_emitsTrue() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, keyPair.getPrivate())
@@ -171,7 +172,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void getVerificationResult_invalidSignature_emitsFalse() {
-        byte[] unencryptedBytes = Base64.getDecoder().decode(ENCODED_SYMMETRIC_KEY);
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(newKeyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, newKeyPair.getPrivate())

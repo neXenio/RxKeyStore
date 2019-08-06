@@ -80,7 +80,6 @@ public class RxKeyStoreTest {
     @Test
     public void getAliases_aliasesAvailable_emitsAliases() {
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
-                .doOnSuccess(keyPair -> this.defaultKeyPair = keyPair)
                 .ignoreElement()
                 .andThen(keyStore.getAliases())
                 .test()
