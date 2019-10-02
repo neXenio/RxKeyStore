@@ -21,6 +21,7 @@ import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Calendar;
 
+import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
 
 import androidx.annotation.NonNull;
@@ -33,6 +34,16 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
 
     public BaseAsymmetricCryptoProvider(RxKeyStore rxKeyStore, String keyAlgorithm) {
         super(rxKeyStore, keyAlgorithm);
+    }
+
+    @Override
+    public Single<byte[]> generateSecretKey(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey) {
+        return getKeyAgreementInstance()
+                .flatMap(keyAgreement -> Single.fromCallable(() -> {
+                    keyAgreement.init(privateKey);
+                    keyAgreement.doPhase(publicKey, true);
+                    return keyAgreement.generateSecret();
+                }));
     }
 
     @Override
@@ -173,6 +184,12 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
 
     protected Single<Signature> getSignatureInstance() {
         return Single.defer(() -> Single.just(Signature.getInstance(getSignatureAlgorithm())));
+    }
+
+    protected abstract String getKeyAgreementAlgorithm();
+
+    protected Single<KeyAgreement> getKeyAgreementInstance() {
+        return Single.defer(() -> Single.just(KeyAgreement.getInstance(getKeyAgreementAlgorithm())));
     }
 
 }

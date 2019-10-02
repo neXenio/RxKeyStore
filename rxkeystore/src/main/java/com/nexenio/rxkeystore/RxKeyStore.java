@@ -1,5 +1,7 @@
 package com.nexenio.rxkeystore;
 
+import android.security.keystore.KeyProperties;
+
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -49,6 +51,9 @@ public final class RxKeyStore {
     public static final String DIGEST_SHA512 = "SHA-512";
 
     public static final String CERTIFICATE_TYPE_X509 = "X.509";
+
+    public static final String KEY_AGREEMENT_DH = "DH";
+    public static final String KEY_AGREEMENT_ECDH = "ECDH";
 
     private final String keyStoreType;
 

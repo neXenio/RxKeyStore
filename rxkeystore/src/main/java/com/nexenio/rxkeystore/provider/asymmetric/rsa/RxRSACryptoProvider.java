@@ -7,6 +7,7 @@ import static com.nexenio.rxkeystore.RxKeyStore.BLOCK_MODE_ECB;
 import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
 import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA512;
 import static com.nexenio.rxkeystore.RxKeyStore.ENCRYPTION_PADDING_RSA_PKCS1;
+import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_DH;
 import static com.nexenio.rxkeystore.RxKeyStore.KEY_ALGORITHM_RSA;
 import static com.nexenio.rxkeystore.RxKeyStore.SIGNATURE_PADDING_RSA_PKCS1;
 
@@ -19,6 +20,7 @@ public final class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
 
     private static final String TRANSFORMATION_ALGORITHM = "RSA/ECB/PKCS1Padding";
     private static final String SIGNATURE_ALGORITHM = "SHA256withRSA";
+    private static final String KEY_AGREEMENT_ALGORITHM = KEY_AGREEMENT_DH;
 
     public RxRSACryptoProvider(RxKeyStore rxKeyStore) {
         super(rxKeyStore, KEY_ALGORITHM_RSA);
@@ -52,6 +54,11 @@ public final class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
     @Override
     protected String getSignatureAlgorithm() {
         return SIGNATURE_ALGORITHM;
+    }
+
+    @Override
+    protected String getKeyAgreementAlgorithm() {
+        return KEY_AGREEMENT_ALGORITHM;
     }
 
 }

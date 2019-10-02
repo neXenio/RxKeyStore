@@ -105,6 +105,19 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
     }
 
     @Test
+    public void generateSecretKey_matchingKeyPairs_sameSecretKey() {
+        KeyPair firstKeyPair = asymmetricCryptoProvider.getKeyPair(ALIAS_DEFAULT).blockingGet();
+        KeyPair secondKeyPair = asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context).blockingGet();
+
+        Single<byte[]> firstSecretSingle = asymmetricCryptoProvider.generateSecretKey(firstKeyPair.getPrivate(), secondKeyPair.getPublic());
+        Single<byte[]> secondSecretSingle = asymmetricCryptoProvider.generateSecretKey(secondKeyPair.getPrivate(), firstKeyPair.getPublic());
+
+        Single.zip(firstSecretSingle, secondSecretSingle, Objects::equals)
+                .test()
+                .assertValue(true);
+    }
+
+    @Test
     public void sign_validData_emitsSignature() {
         byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
@@ -186,8 +199,8 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
     public void generateKeyPair_validConfiguration_emitsKeyPair() {
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .test()
-                .assertValue(keyPair -> keyPair.getPublic().getAlgorithm().equals("RSA")
-                        && keyPair.getPrivate().getAlgorithm().equals("RSA"));
+                .assertValue(keyPair -> keyPair.getPublic().getAlgorithm().equals(asymmetricCryptoProvider.getKeyAlgorithm())
+                        && keyPair.getPrivate().getAlgorithm().equals(asymmetricCryptoProvider.getKeyAlgorithm()));
     }
 
     @Test
