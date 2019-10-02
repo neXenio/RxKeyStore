@@ -9,6 +9,10 @@ public final class RxBase64 {
 
     private static final int FLAGS_DEFAULT = Base64.DEFAULT;
 
+    private RxBase64() {
+        throw new AssertionError("No instantiation allowed");
+    }
+
     public static Single<String> encode(@NonNull byte[] data) {
         return encode(data, FLAGS_DEFAULT);
     }
