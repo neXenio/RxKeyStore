@@ -5,13 +5,13 @@ import com.nexenio.rxkeystore.provider.asymmetric.BaseAsymmetricCryptoProviderTe
 import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import java.security.KeyPair;
-import java.util.Objects;
+import java.security.Provider;
+import java.security.Security;
 
 import androidx.annotation.NonNull;
-import io.reactivex.Single;
 
 public class RxECCryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
 
@@ -21,8 +21,21 @@ public class RxECCryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
     }
 
     @Override
+    protected RxKeyStore createKeyStore() {
+        return super.createKeyStore();
+        //return new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+    }
+
+    @Override
     protected RxAsymmetricCryptoProvider createAsymmetricCryptoProvider(@NonNull RxKeyStore keyStore) {
         return new RxECCryptoProvider(keyStore);
+    }
+
+    @Override
+    @Ignore("The default provider doesn't support AndroidKeyStoreECPrivateKey." +
+            "For that to work, a custom provider (e.g. Bouncy Castle) needs to be used.")
+    public void generateSecretKey_matchingKeyPairs_sameSecretKey() {
+        //super.generateSecretKey_matchingKeyPairs_sameSecretKey();
     }
 
     @Test

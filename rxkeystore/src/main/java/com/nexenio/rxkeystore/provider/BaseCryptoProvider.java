@@ -55,9 +55,15 @@ public abstract class BaseCryptoProvider implements RxCryptoProvider {
     protected abstract Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias);
 
     protected Single<Cipher> getCipherInstance() {
-        return Single.defer(
-                () -> Single.just(Cipher.getInstance(getTransformationAlgorithm()))
-        );
+        return Single.defer(() -> {
+            Cipher cipher;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                cipher = Cipher.getInstance(getTransformationAlgorithm());
+            } else {
+                cipher = Cipher.getInstance(getTransformationAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(cipher);
+        });
     }
 
     protected abstract String getTransformationAlgorithm();

@@ -27,12 +27,16 @@ public abstract class BaseCryptoProviderTest {
 
     protected void setUp() {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        keyStore = new RxKeyStore();
+        keyStore = createKeyStore();
         cryptoProvider = createCryptoProvider(keyStore);
 
         resetKeyStore().andThen(generateDefaultKeys())
                 .test()
                 .assertComplete();
+    }
+
+    protected RxKeyStore createKeyStore() {
+        return new RxKeyStore();
     }
 
     protected abstract RxCryptoProvider createCryptoProvider(@NonNull RxKeyStore keyStore);

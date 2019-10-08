@@ -109,8 +109,8 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         KeyPair firstKeyPair = asymmetricCryptoProvider.getKeyPair(ALIAS_DEFAULT).blockingGet();
         KeyPair secondKeyPair = asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context).blockingGet();
 
-        Single<byte[]> firstSecretSingle = asymmetricCryptoProvider.generateSecretKey(firstKeyPair.getPrivate(), secondKeyPair.getPublic());
-        Single<byte[]> secondSecretSingle = asymmetricCryptoProvider.generateSecretKey(secondKeyPair.getPrivate(), firstKeyPair.getPublic());
+        Single<byte[]> firstSecretSingle = asymmetricCryptoProvider.generateSecret(firstKeyPair.getPrivate(), secondKeyPair.getPublic());
+        Single<byte[]> secondSecretSingle = asymmetricCryptoProvider.generateSecret(secondKeyPair.getPrivate(), firstKeyPair.getPublic());
 
         Single.zip(firstSecretSingle, secondSecretSingle, Objects::equals)
                 .test()

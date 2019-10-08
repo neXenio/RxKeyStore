@@ -15,7 +15,7 @@ public final class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
     private static final String[] SIGNATURE_PADDINGS = new String[]{};
     private static final String[] DIGESTS = new String[]{DIGEST_SHA256};
 
-    private static final String TRANSFORMATION_ALGORITHM = "";
+    private static final String TRANSFORMATION_ALGORITHM = "ECIES";
     private static final String SIGNATURE_ALGORITHM = "SHA256withECDSA";
     private static final String KEY_AGREEMENT_ALGORITHM = KEY_AGREEMENT_ECDH;
 

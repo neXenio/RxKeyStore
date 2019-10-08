@@ -27,12 +27,12 @@ public abstract class BaseSymmetricCryptoProvider extends BaseCryptoProvider imp
 
     @Override
     public Single<SecretKey> generateKey(@NonNull String alias, @NonNull Context context) {
-        return getKeyAlgorithmParameterSpec(alias, context)
-                .map(algorithmParameterSpec -> {
-                    KeyGenerator keyGenerator = KeyGenerator.getInstance(keyAlgorithm, rxKeyStore.getKeyStoreType());
-                    keyGenerator.init(algorithmParameterSpec);
-                    return keyGenerator.generateKey();
-                });
+        return getKeyGeneratorInstance()
+                .flatMap(keyGenerator -> getKeyAlgorithmParameterSpec(alias, context)
+                        .map(algorithmParameterSpec -> {
+                            keyGenerator.init(algorithmParameterSpec);
+                            return keyGenerator.generateKey();
+                        }));
     }
 
     @Override
@@ -61,6 +61,18 @@ public abstract class BaseSymmetricCryptoProvider extends BaseCryptoProvider imp
     protected abstract String[] getBlockModes();
 
     protected abstract String[] getEncryptionPaddings();
+
+    protected Single<KeyGenerator> getKeyGeneratorInstance() {
+        return Single.defer(() -> {
+            KeyGenerator keyGenerator;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                keyGenerator = KeyGenerator.getInstance(getKeyAlgorithm());
+            } else {
+                keyGenerator = KeyGenerator.getInstance(getKeyAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(keyGenerator);
+        });
+    }
 
     @Override
     public Single<SecretKey> getKey(@NonNull String alias) {

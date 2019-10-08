@@ -37,7 +37,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
     }
 
     @Override
-    public Single<byte[]> generateSecretKey(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey) {
+    public Single<byte[]> generateSecret(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey) {
         return getKeyAgreementInstance()
                 .flatMap(keyAgreement -> Single.fromCallable(() -> {
                     keyAgreement.init(privateKey);
@@ -80,12 +80,12 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
-        return getKeyAlgorithmParameterSpec(alias, context)
-                .map(algorithmParameterSpec -> {
-                    KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyAlgorithm, rxKeyStore.getKeyStoreType());
-                    keyPairGenerator.initialize(algorithmParameterSpec);
-                    return keyPairGenerator.generateKeyPair();
-                });
+        return getKeyPairGeneratorInstance()
+                .flatMap(keyPairGenerator -> getKeyAlgorithmParameterSpec(alias, context)
+                        .map(algorithmParameterSpec -> {
+                            keyPairGenerator.initialize(algorithmParameterSpec);
+                            return keyPairGenerator.generateKeyPair();
+                        }));
     }
 
     @Override
@@ -180,16 +180,44 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
         return Maybe.zip(getPublicKeyIfAvailable(alias), getPrivateKeyIfAvailable(alias), KeyPair::new);
     }
 
+    protected Single<KeyPairGenerator> getKeyPairGeneratorInstance() {
+        return Single.defer(() -> {
+            KeyPairGenerator keyPairGenerator;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                keyPairGenerator = KeyPairGenerator.getInstance(getKeyAlgorithm());
+            } else {
+                keyPairGenerator = KeyPairGenerator.getInstance(getKeyAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(keyPairGenerator);
+        });
+    }
+
     protected abstract String getSignatureAlgorithm();
 
     protected Single<Signature> getSignatureInstance() {
-        return Single.defer(() -> Single.just(Signature.getInstance(getSignatureAlgorithm())));
+        return Single.defer(() -> {
+            Signature signature;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                signature = Signature.getInstance(getSignatureAlgorithm());
+            } else {
+                signature = Signature.getInstance(getSignatureAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(signature);
+        });
     }
 
     protected abstract String getKeyAgreementAlgorithm();
 
     protected Single<KeyAgreement> getKeyAgreementInstance() {
-        return Single.defer(() -> Single.just(KeyAgreement.getInstance(getKeyAgreementAlgorithm())));
+        return Single.defer(() -> {
+            KeyAgreement keyAgreement;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                keyAgreement = KeyAgreement.getInstance(getKeyAgreementAlgorithm());
+            } else {
+                keyAgreement = KeyAgreement.getInstance(getKeyAgreementAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(keyAgreement);
+        });
     }
 
 }

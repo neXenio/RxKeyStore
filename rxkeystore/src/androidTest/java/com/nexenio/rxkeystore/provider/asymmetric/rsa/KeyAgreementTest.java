@@ -1,18 +1,14 @@
 package com.nexenio.rxkeystore.provider.asymmetric.rsa;
 
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
-
 import org.junit.Test;
 
-import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.AlgorithmParameterSpec;
+import java.security.Security;
 
 import javax.crypto.KeyAgreement;
 
@@ -22,33 +18,25 @@ public class KeyAgreementTest {
 
     @Test
     public void generateSecretKey_matchingKeyPairs_sameSecretKey() throws Exception {
-        KeyPair firstKeyPair = generateKeyPair("first");
-        KeyPair secondKeyPair = generateKeyPair("second");
+        KeyPair aliceKeyPair = generateKeyPair("alice");
+        KeyPair bobKeyPair = generateKeyPair("bob");
 
-        byte[] firstSecretKey = generateSecretKey(firstKeyPair.getPrivate(), secondKeyPair.getPublic());
-        byte[] secondSecretKey = generateSecretKey(secondKeyPair.getPrivate(), firstKeyPair.getPublic());
+        byte[] firstSecretKey = generateSecret(aliceKeyPair.getPrivate(), bobKeyPair.getPublic());
+        byte[] secondSecretKey = generateSecret(bobKeyPair.getPrivate(), aliceKeyPair.getPublic());
 
         assertArrayEquals(firstSecretKey, secondSecretKey);
     }
 
-    private byte[] generateSecretKey(PrivateKey privateKey, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeyException {
+    private byte[] generateSecret(PrivateKey privateKey, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeyException {
         KeyAgreement keyAgreement = KeyAgreement.getInstance("DH");
         keyAgreement.init(privateKey);
         keyAgreement.doPhase(publicKey, true);
         return keyAgreement.generateSecret();
     }
 
-    private KeyPair generateKeyPair(String alias) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        int keyPurposes = KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY;
-        AlgorithmParameterSpec algorithmParameterSpec = new KeyGenParameterSpec.Builder(alias, keyPurposes)
-                .setBlockModes("ECB")
-                .setEncryptionPaddings("PKCS1Padding")
-                .setSignaturePaddings("PKCS1")
-                .setDigests("SHA-256")
-                .build();
-
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(algorithmParameterSpec);
+    private KeyPair generateKeyPair(String alias) throws NoSuchAlgorithmException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DH");
+        keyPairGenerator.initialize(1024);
         return keyPairGenerator.generateKeyPair();
     }
 
