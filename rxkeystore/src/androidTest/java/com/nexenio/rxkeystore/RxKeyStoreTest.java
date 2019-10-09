@@ -57,13 +57,21 @@ public class RxKeyStoreTest {
                 .ignoreElement();
     }
 
+    //@Ignore("Just for debugging purposes")
     @Test
     public void listSecurityProviders() {
         StringBuilder stringBuilder = new StringBuilder();
         for (Provider provider : Security.getProviders()) {
-            stringBuilder.append("\n").append(provider);
-            for (Object key : provider.keySet()) {
-                stringBuilder.append("\n\t").append(provider.get(key));
+            stringBuilder.append(String.format("- %s: %s (version %.1f)\n",
+                    provider.getName(),
+                    provider.getInfo(),
+                    provider.getVersion()
+            ));
+            for (Provider.Service service : provider.getServices()) {
+                stringBuilder.append(String.format("\t- %s: %s\n",
+                        service.getType(),
+                        service.getAlgorithm()
+                ));
             }
         }
         System.out.println("Available security providers:\n" + stringBuilder);
