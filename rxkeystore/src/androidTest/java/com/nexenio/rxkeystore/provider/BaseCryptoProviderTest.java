@@ -47,6 +47,17 @@ public abstract class BaseCryptoProviderTest {
 
     protected abstract Completable generateDefaultKeys();
 
+    /**
+     * Makes sure that {@link #generateDefaultKeys()} actually inserted something with the {@link
+     * #ALIAS_DEFAULT} into the {@link #keyStore}.
+     */
+    @Test
+    public void setup_defaultKeyInserted() {
+        keyStore.getAliases()
+                .test()
+                .assertValues(ALIAS_DEFAULT);
+    }
+
     @Test
     public void getCipherInstance() {
 
