@@ -42,4 +42,12 @@ public interface RxAsymmetricCryptoProvider extends RxCryptoProvider {
 
     Maybe<Certificate> getCertificateIfAvailable(@NonNull String alias);
 
+    Completable setKeyPair(@NonNull String alias, @NonNull KeyPair keyPair);
+
+    Completable setPrivateKey(@NonNull String alias, @NonNull PrivateKey privateKey);
+
+    Completable setPublicKey(@NonNull String alias, @NonNull PublicKey publicKey);
+
+    Completable setCertificate(@NonNull String alias, @NonNull Certificate certificate);
+
 }
