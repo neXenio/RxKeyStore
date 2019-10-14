@@ -122,6 +122,10 @@ public final class RxKeyStore {
                 ));
     }
 
+    public Completable setEntry(@NonNull String alias, @NonNull KeyStore.Entry entry) {
+        return setEntry(alias, entry, null);
+    }
+
     public Completable setEntry(@NonNull String alias, @NonNull KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protectionParameter) {
         return getLoadedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(

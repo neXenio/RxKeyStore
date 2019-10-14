@@ -45,6 +45,14 @@ public class RxRSACryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
         return new RxRSACryptoProvider(keyStore);
     }
 
+    // TODO: 2019-10-14 remove
+    @Test
+    public void setup_defaultKeyInserted() {
+        asymmetricCryptoProvider.getKeyPair(ALIAS_DEFAULT)
+                .test()
+                .assertValueCount(1);
+    }
+
     @Override
     @Ignore("The default provider doesn't support AndroidKeyStoreRSAPrivateKey." +
             "For that to work, a custom provider (e.g. Bouncy Castle) needs to be used.")

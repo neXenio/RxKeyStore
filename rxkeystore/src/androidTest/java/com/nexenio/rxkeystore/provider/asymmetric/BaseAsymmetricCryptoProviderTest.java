@@ -39,7 +39,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
     @Override
     protected Completable generateDefaultKeys() {
         return asymmetricCryptoProvider.generateKeyPair(ALIAS_DEFAULT, context)
-                .ignoreElement();
+                .flatMapCompletable(keyPair -> asymmetricCryptoProvider.setKeyPair(ALIAS_DEFAULT, keyPair));
     }
 
     @Test
@@ -101,7 +101,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.decrypt(unencryptedBytes, null, keyPair.getPrivate()))
                 .test()
-                .assertError(IllegalBlockSizeException.class);
+                .assertError(ArrayIndexOutOfBoundsException.class);
     }
 
     @Test

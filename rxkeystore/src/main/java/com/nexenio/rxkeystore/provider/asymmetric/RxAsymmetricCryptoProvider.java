@@ -5,6 +5,7 @@ import android.content.Context;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
 import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
@@ -44,10 +45,8 @@ public interface RxAsymmetricCryptoProvider extends RxCryptoProvider {
 
     Completable setKeyPair(@NonNull String alias, @NonNull KeyPair keyPair);
 
-    Completable setPrivateKey(@NonNull String alias, @NonNull PrivateKey privateKey);
+    Completable setPrivateKey(@NonNull String alias, @NonNull KeyStore.PrivateKeyEntry privateKeyEntry);
 
-    Completable setPublicKey(@NonNull String alias, @NonNull PublicKey publicKey);
-
-    Completable setCertificate(@NonNull String alias, @NonNull Certificate certificate);
+    Completable setCertificate(@NonNull String alias, @NonNull KeyStore.TrustedCertificateEntry trustedCertificateEntry);
 
 }
