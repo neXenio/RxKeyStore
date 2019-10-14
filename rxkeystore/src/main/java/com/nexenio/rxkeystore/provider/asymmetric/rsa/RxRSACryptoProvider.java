@@ -1,7 +1,15 @@
 package com.nexenio.rxkeystore.provider.asymmetric.rsa;
 
+import android.content.Context;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.asymmetric.BaseAsymmetricCryptoProvider;
+
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.RSAKeyGenParameterSpec;
+
+import androidx.annotation.NonNull;
+import io.reactivex.Single;
 
 import static com.nexenio.rxkeystore.RxKeyStore.BLOCK_MODE_ECB;
 import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
@@ -13,6 +21,7 @@ import static com.nexenio.rxkeystore.RxKeyStore.SIGNATURE_PADDING_RSA_PKCS1;
 
 public final class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
 
+    private static final int KEY_SIZE = 2048;
     private static final String[] BLOCK_MODES = new String[]{BLOCK_MODE_ECB};
     private static final String[] ENCRYPTION_PADDINGS = new String[]{ENCRYPTION_PADDING_RSA_PKCS1};
     private static final String[] SIGNATURE_PADDINGS = new String[]{SIGNATURE_PADDING_RSA_PKCS1};
@@ -24,6 +33,11 @@ public final class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
 
     public RxRSACryptoProvider(RxKeyStore rxKeyStore) {
         super(rxKeyStore, KEY_ALGORITHM_RSA);
+    }
+
+    @Override
+    public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
+        return Single.fromCallable(() -> new RSAKeyGenParameterSpec(KEY_SIZE, RSAKeyGenParameterSpec.F4));
     }
 
     @Override

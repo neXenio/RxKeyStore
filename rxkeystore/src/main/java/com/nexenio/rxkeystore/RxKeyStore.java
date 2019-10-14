@@ -122,7 +122,14 @@ public final class RxKeyStore {
                 ));
     }
 
-    private Completable deleteEntry(@NonNull String alias) {
+    public Completable setEntry(@NonNull String alias, @NonNull KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protectionParameter) {
+        return getLoadedKeyStore()
+                .flatMapCompletable(store -> Completable.fromAction(
+                        () -> store.setEntry(alias, entry, protectionParameter)
+                ));
+    }
+
+    public Completable deleteEntry(@NonNull String alias) {
         return getLoadedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(
                         () -> store.deleteEntry(alias)

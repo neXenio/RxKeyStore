@@ -18,7 +18,7 @@ import static com.nexenio.rxkeystore.RxKeyStore.KEY_ALGORITHM_EC;
 
 public final class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
 
-    private static final String NAMED_CURVE = "secp256k1";
+    private static final String CURVE_NAME = "secp256r1";
 
     private static final String[] BLOCK_MODES = new String[]{BLOCK_MODE_ECB};
     private static final String[] ENCRYPTION_PADDINGS = new String[]{};
@@ -35,7 +35,7 @@ public final class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
 
     @Override
     public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
-        return Single.fromCallable(() -> new ECGenParameterSpec(NAMED_CURVE));
+        return Single.fromCallable(() -> new ECGenParameterSpec(CURVE_NAME));
     }
 
     @Override

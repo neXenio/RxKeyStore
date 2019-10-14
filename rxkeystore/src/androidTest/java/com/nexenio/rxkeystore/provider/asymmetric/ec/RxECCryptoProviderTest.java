@@ -6,15 +6,10 @@ import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.Provider;
-import java.security.SecureRandom;
 import java.security.Security;
-import java.security.spec.ECGenParameterSpec;
 
 import androidx.annotation.NonNull;
 
@@ -47,21 +42,6 @@ public class RxECCryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
     @Override
     protected RxAsymmetricCryptoProvider createAsymmetricCryptoProvider(@NonNull RxKeyStore keyStore) {
         return new RxECCryptoProvider(keyStore);
-    }
-
-    @Override
-    @Ignore("The default provider doesn't support AndroidKeyStoreECPrivateKey." +
-            "For that to work, a custom provider (e.g. Bouncy Castle) needs to be used.")
-    public void generateSecretKey_matchingKeyPairs_sameSecretKey() {
-        //super.generateSecretKey_matchingKeyPairs_sameSecretKey();
-    }
-
-    @Test
-    public void generate() throws Exception {
-        ECGenParameterSpec ecGenSpec = new ECGenParameterSpec("prime192v1");
-        KeyPairGenerator g = KeyPairGenerator.getInstance("ECDSA", "BC");
-        g.initialize(ecGenSpec, new SecureRandom());
-        KeyPair pair = g.generateKeyPair();
     }
 
     @Test
