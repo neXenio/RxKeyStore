@@ -25,6 +25,7 @@ public final class RxKeyStore {
 
     public static final String KEY_ALGORITHM_RSA = "RSA";
     public static final String KEY_ALGORITHM_EC = "EC";
+
     public static final String KEY_ALGORITHM_AES = "AES";
 
     public static final String TRANSFORMATION_RSA = "RSA/ECB/PKCS1Padding";

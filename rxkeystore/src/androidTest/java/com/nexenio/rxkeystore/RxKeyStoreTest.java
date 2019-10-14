@@ -6,6 +6,7 @@ import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 import com.nexenio.rxkeystore.provider.asymmetric.rsa.RxRSACryptoProvider;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.security.Key;
@@ -57,7 +58,7 @@ public class RxKeyStoreTest {
                 .ignoreElement();
     }
 
-    //@Ignore("Just for debugging purposes")
+    @Ignore("Just for debugging purposes")
     @Test
     public void listSecurityProviders() {
         StringBuilder stringBuilder = new StringBuilder();

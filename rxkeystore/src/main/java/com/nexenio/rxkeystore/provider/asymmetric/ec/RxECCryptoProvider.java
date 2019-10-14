@@ -1,7 +1,15 @@
 package com.nexenio.rxkeystore.provider.asymmetric.ec;
 
+import android.content.Context;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.asymmetric.BaseAsymmetricCryptoProvider;
+
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.ECGenParameterSpec;
+
+import androidx.annotation.NonNull;
+import io.reactivex.Single;
 
 import static com.nexenio.rxkeystore.RxKeyStore.BLOCK_MODE_ECB;
 import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
@@ -9,6 +17,8 @@ import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_ECDH;
 import static com.nexenio.rxkeystore.RxKeyStore.KEY_ALGORITHM_EC;
 
 public final class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
+
+    private static final String NAMED_CURVE = "secp256k1";
 
     private static final String[] BLOCK_MODES = new String[]{BLOCK_MODE_ECB};
     private static final String[] ENCRYPTION_PADDINGS = new String[]{};
@@ -21,6 +31,11 @@ public final class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
 
     public RxECCryptoProvider(RxKeyStore rxKeyStore) {
         super(rxKeyStore, KEY_ALGORITHM_EC);
+    }
+
+    @Override
+    public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
+        return Single.fromCallable(() -> new ECGenParameterSpec(NAMED_CURVE));
     }
 
     @Override
