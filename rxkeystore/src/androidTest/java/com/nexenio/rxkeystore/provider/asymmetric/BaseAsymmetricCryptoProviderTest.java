@@ -61,7 +61,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
                 .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
                         .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
                 .test()
-                .assertError(IllegalBlockSizeException.class);
+                .assertError(ArrayIndexOutOfBoundsException.class);
     }
 
     /**
