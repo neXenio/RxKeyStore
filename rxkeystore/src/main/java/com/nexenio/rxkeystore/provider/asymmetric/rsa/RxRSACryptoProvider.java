@@ -19,7 +19,7 @@ import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_DH;
 import static com.nexenio.rxkeystore.RxKeyStore.KEY_ALGORITHM_RSA;
 import static com.nexenio.rxkeystore.RxKeyStore.SIGNATURE_PADDING_RSA_PKCS1;
 
-public final class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
+public class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
 
     private static final int KEY_SIZE = 2048;
     private static final String[] BLOCK_MODES = new String[]{BLOCK_MODE_ECB};
@@ -37,7 +37,13 @@ public final class RxRSACryptoProvider extends BaseAsymmetricCryptoProvider {
 
     @Override
     public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
-        return Single.fromCallable(() -> new RSAKeyGenParameterSpec(KEY_SIZE, RSAKeyGenParameterSpec.F4));
+        return Single.defer(() -> {
+            if (RxKeyStore.PROVIDER_BOUNCY_CASTLE.equals(rxKeyStore.getProvider())) {
+                return Single.fromCallable(() -> new RSAKeyGenParameterSpec(KEY_SIZE, RSAKeyGenParameterSpec.F4));
+            } else {
+                return super.getKeyAlgorithmParameterSpec(alias, context);
+            }
+        });
     }
 
     @Override

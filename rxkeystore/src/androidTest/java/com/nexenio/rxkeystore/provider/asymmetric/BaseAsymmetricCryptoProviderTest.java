@@ -6,6 +6,7 @@ import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
+import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -16,8 +17,6 @@ import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Objects;
-
-import javax.crypto.IllegalBlockSizeException;
 
 import androidx.annotation.NonNull;
 import io.reactivex.Completable;
@@ -61,7 +60,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
                 .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
                         .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
                 .test()
-                .assertError(ArrayIndexOutOfBoundsException.class);
+                .assertError(BadBlockException.class);
     }
 
     /**
@@ -101,7 +100,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.decrypt(unencryptedBytes, null, keyPair.getPrivate()))
                 .test()
-                .assertError(ArrayIndexOutOfBoundsException.class);
+                .assertError(BadBlockException.class);
     }
 
     @Test

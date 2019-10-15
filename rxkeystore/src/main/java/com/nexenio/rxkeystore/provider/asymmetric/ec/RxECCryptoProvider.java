@@ -16,7 +16,7 @@ import static com.nexenio.rxkeystore.RxKeyStore.DIGEST_SHA256;
 import static com.nexenio.rxkeystore.RxKeyStore.KEY_AGREEMENT_ECDH;
 import static com.nexenio.rxkeystore.RxKeyStore.KEY_ALGORITHM_EC;
 
-public final class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
+public class RxECCryptoProvider extends BaseAsymmetricCryptoProvider {
 
     private static final String CURVE_NAME = "secp256r1";
 

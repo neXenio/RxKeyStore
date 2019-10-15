@@ -5,6 +5,7 @@ import android.os.Build;
 import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.util.Base64;
 
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
@@ -22,6 +23,8 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
+import org.bouncycastle.operator.bc.BcContentSignerBuilder;
+import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder;
 
 import java.math.BigInteger;
@@ -217,47 +220,69 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
     }
 
     protected Single<Certificate> createSelfSignedCertificate(@NonNull KeyPair keyPair) {
-        return Single.fromCallable(() -> {
-            Calendar startDate = Calendar.getInstance();
-            Calendar endDate = Calendar.getInstance();
-            endDate.add(Calendar.YEAR, 10);
+        return createContentSigner(keyPair.getPrivate())
+                .flatMap(contentSigner -> Single.fromCallable(() -> {
+                    Calendar startDate = Calendar.getInstance();
+                    Calendar endDate = Calendar.getInstance();
+                    endDate.add(Calendar.YEAR, 10);
+
+                    SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
+
+                    X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
+                    nameBuilder.addRDN(BCStyle.CN, "RxKeyStore");
+                    nameBuilder.addRDN(BCStyle.OU, "Cryptography");
+                    nameBuilder.addRDN(BCStyle.O, "neXenio");
+                    nameBuilder.addRDN(BCStyle.L, "Berlin");
+                    nameBuilder.addRDN(BCStyle.ST, "Berlin");
+                    nameBuilder.addRDN(BCStyle.C, "DE");
+
+                    X500Name issuer = nameBuilder.build();
+                    X500Name subject = nameBuilder.build();
+
+                    BigInteger serialNumber = new BigInteger(64, new SecureRandom());
+
+                    X509v1CertificateBuilder certificateBuilder = new X509v1CertificateBuilder(
+                            issuer,
+                            serialNumber,
+                            startDate.getTime(),
+                            endDate.getTime(),
+                            subject,
+                            keyInfo
+                    );
+
+                    JcaX509CertificateConverter certificateConverter = new JcaX509CertificateConverter();
+                    if (!rxKeyStore.shouldUseDefaultProvider()) {
+                        certificateConverter.setProvider(rxKeyStore.getProvider());
+                    }
+
+                    X509CertificateHolder certificateHolder = certificateBuilder.build(contentSigner);
+                    return certificateConverter.getCertificate(certificateHolder);
+                }));
+    }
+
+    protected Single<ContentSigner> createContentSigner(@NonNull PrivateKey privateKey) {
+        return Single.defer(() -> {
+            AsymmetricKeyParameter keyParameter = PrivateKeyFactory.createKey(privateKey.getEncoded());
 
             AlgorithmIdentifier signatureId = new DefaultSignatureAlgorithmIdentifierFinder().find(getSignatureAlgorithm());
             AlgorithmIdentifier digestId = new DefaultDigestAlgorithmIdentifierFinder().find(signatureId);
 
-            AsymmetricKeyParameter keyParameter = PrivateKeyFactory.createKey(keyPair.getPrivate().getEncoded());
-            SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
-            ContentSigner contentSigner = new BcRSAContentSignerBuilder(signatureId, digestId).build(keyParameter);
+            BcContentSignerBuilder contentSignerBuilder = null;
 
-            X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
-            nameBuilder.addRDN(BCStyle.CN, "RxKeyStore");
-            nameBuilder.addRDN(BCStyle.OU, "Cryptography");
-            nameBuilder.addRDN(BCStyle.O, "neXenio");
-            nameBuilder.addRDN(BCStyle.L, "Berlin");
-            nameBuilder.addRDN(BCStyle.ST, "Berlin");
-            nameBuilder.addRDN(BCStyle.C, "DE");
-
-            X500Name issuer = nameBuilder.build();
-            X500Name subject = nameBuilder.build();
-
-            BigInteger serialNumber = new BigInteger(64, new SecureRandom());
-
-            X509v1CertificateBuilder certificateBuilder = new X509v1CertificateBuilder(
-                    issuer,
-                    serialNumber,
-                    startDate.getTime(),
-                    endDate.getTime(),
-                    subject,
-                    keyInfo
-            );
-
-            JcaX509CertificateConverter certificateConverter = new JcaX509CertificateConverter();
-            if (!rxKeyStore.shouldUseDefaultProvider()) {
-                certificateConverter.setProvider(rxKeyStore.getProvider());
+            switch (privateKey.getAlgorithm()) {
+                case RxKeyStore.KEY_ALGORITHM_RSA:
+                    contentSignerBuilder = new BcRSAContentSignerBuilder(signatureId, digestId);
+                    break;
+                case RxKeyStore.KEY_ALGORITHM_EC:
+                    contentSignerBuilder = new BcECContentSignerBuilder(signatureId, digestId);
+                    break;
             }
 
-            X509CertificateHolder certificateHolder = certificateBuilder.build(contentSigner);
-            return certificateConverter.getCertificate(certificateHolder);
+            if (contentSignerBuilder == null) {
+                return Single.error(new IllegalArgumentException("Unable to create content signer for key algorithm: " + privateKey.getAlgorithm()));
+            }
+
+            return Single.just(contentSignerBuilder.build(keyParameter));
         });
     }
 
