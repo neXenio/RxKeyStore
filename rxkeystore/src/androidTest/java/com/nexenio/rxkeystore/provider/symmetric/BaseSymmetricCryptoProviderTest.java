@@ -36,7 +36,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCryptoProvider
     @Override
     protected Completable generateDefaultKeys() {
         return symmetricCryptoProvider.generateKey(ALIAS_DEFAULT, context)
-                .ignoreElement();
+                .flatMapCompletable(secretKey -> symmetricCryptoProvider.setKey(ALIAS_DEFAULT, secretKey));
     }
 
     @Test

@@ -8,6 +8,7 @@ import android.security.keystore.KeyProperties;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
+import java.security.KeyStore;
 import java.security.spec.AlgorithmParameterSpec;
 
 import javax.crypto.KeyGenerator;
@@ -15,6 +16,7 @@ import javax.crypto.SecretKey;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 
@@ -82,6 +84,19 @@ public abstract class BaseSymmetricCryptoProvider extends BaseCryptoProvider imp
     @Override
     public Maybe<SecretKey> getKeyIfAvailable(@NonNull String alias) {
         return rxKeyStore.getKeyIfAvailable(alias).cast(SecretKey.class);
+    }
+
+    @Override
+    public Completable setKey(@NonNull String alias, @NonNull SecretKey secretKey) {
+        return Completable.defer(() -> {
+            KeyStore.SecretKeyEntry entry = new KeyStore.SecretKeyEntry(secretKey);
+            return setKey(alias, entry);
+        });
+    }
+
+    @Override
+    public Completable setKey(@NonNull String alias, @NonNull KeyStore.SecretKeyEntry secretKeyEntry) {
+        return rxKeyStore.setEntry(alias, secretKeyEntry);
     }
 
 }
