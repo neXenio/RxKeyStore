@@ -10,7 +10,6 @@ import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.SecureRandom;
@@ -52,17 +51,6 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
                 .assertValue(decryptedBytes -> Arrays.equals(unencryptedBytes, decryptedBytes));
     }
 
-    @Test
-    public void encrypt_invalidData_emitsError() {
-        byte[] unencryptedBytes = LOREM_IPSUM_LONG.getBytes(StandardCharsets.UTF_8);
-
-        asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
-                .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
-                        .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
-                .test()
-                .assertError(BadBlockException.class);
-    }
-
     /**
      * Subsequent calls to {@link RxAsymmetricCryptoProvider#encrypt(byte[], Key)} should emit
      * distinct data for the same input, even if the same key was used. If the same data is emitted,
@@ -95,7 +83,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void decrypt_invalidData_emitsError() {
-        byte[] unencryptedBytes = LOREM_IPSUM_LONG.getBytes(StandardCharsets.UTF_8);
+        byte[] unencryptedBytes = new byte[]{};
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.decrypt(unencryptedBytes, null, keyPair.getPrivate()))
@@ -111,7 +99,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         Single<byte[]> firstSecretSingle = asymmetricCryptoProvider.generateSecret(firstKeyPair.getPrivate(), secondKeyPair.getPublic());
         Single<byte[]> secondSecretSingle = asymmetricCryptoProvider.generateSecret(secondKeyPair.getPrivate(), firstKeyPair.getPublic());
 
-        Single.zip(firstSecretSingle, secondSecretSingle, Objects::equals)
+        Single.zip(firstSecretSingle, secondSecretSingle, Arrays::equals)
                 .test()
                 .assertValue(true);
     }

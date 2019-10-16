@@ -12,8 +12,9 @@ import androidx.annotation.NonNull;
 public class RxAESCryptoProviderTest extends BaseSymmetricCryptoProviderTest {
 
     @Before
-    public void setUp() {
-        super.setUp();
+    @Override
+    public void setUpBeforeEachTest() {
+        super.setUpBeforeEachTest();
     }
 
     @Override
