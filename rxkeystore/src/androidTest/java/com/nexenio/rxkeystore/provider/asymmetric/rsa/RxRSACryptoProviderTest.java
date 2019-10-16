@@ -25,10 +25,11 @@ public class RxRSACryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
         return new RxRSACryptoProvider(keyStore);
     }
 
-    @Override
     @Ignore("DHKeyAgreement requires DHPrivateKey")
+    @Test
+    @Override
     public void generateSecretKey_matchingKeyPairs_sameSecretKey() {
-        //super.generateSecretKey_matchingKeyPairs_sameSecretKey();
+        super.generateSecretKey_matchingKeyPairs_sameSecretKey();
     }
 
     @Test
