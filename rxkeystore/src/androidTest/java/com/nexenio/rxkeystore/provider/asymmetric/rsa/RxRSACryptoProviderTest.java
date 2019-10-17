@@ -10,10 +10,12 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class RxRSACryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
 
+    @CallSuper
     @Before
     @Override
     public void setUpBeforeEachTest() {

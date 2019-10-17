@@ -8,10 +8,12 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class RxECCryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
 
+    @CallSuper
     @Before
     @Override
     public void setUpBeforeEachTest() {

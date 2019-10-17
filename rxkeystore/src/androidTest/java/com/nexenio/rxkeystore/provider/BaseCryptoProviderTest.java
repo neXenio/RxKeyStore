@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.security.Provider;
 import java.security.Security;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import io.reactivex.Completable;
@@ -29,6 +30,7 @@ public abstract class BaseCryptoProviderTest {
     protected RxKeyStore keyStore;
     protected RxCryptoProvider cryptoProvider;
 
+    @CallSuper
     protected void setUpBeforeEachTest() {
         setupSecurityProviders();
 

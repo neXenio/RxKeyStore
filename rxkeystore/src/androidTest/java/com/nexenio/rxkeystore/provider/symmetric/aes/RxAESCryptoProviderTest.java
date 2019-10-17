@@ -7,10 +7,12 @@ import com.nexenio.rxkeystore.provider.symmetric.RxSymmetricCryptoProvider;
 import org.junit.Before;
 import org.junit.Test;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class RxAESCryptoProviderTest extends BaseSymmetricCryptoProviderTest {
 
+    @CallSuper
     @Before
     @Override
     public void setUpBeforeEachTest() {
