@@ -78,16 +78,4 @@ public abstract class BaseCryptoProviderTest {
                 .assertValues(ALIAS_DEFAULT);
     }
 
-    @Ignore("Not implemented")
-    @Test
-    public void getCipherInstance() {
-
-    }
-
-    @Ignore("Not implemented")
-    @Test
-    public void getKeyAlgorithm() {
-
-    }
-
 }

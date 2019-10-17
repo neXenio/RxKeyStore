@@ -90,24 +90,4 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCryptoProvider
                 .assertError(InvalidKeyException.class);
     }
 
-    @Test
-    public void generateKey() {
-    }
-
-    @Test
-    public void getKey() {
-    }
-
-    @Test
-    public void getKeyIfAvailable() {
-    }
-
-    @Test
-    public void getKeyAlgorithmParameterSpec() {
-    }
-
-    @Test
-    public void getKeyGenParameterSpec() {
-    }
-
 }

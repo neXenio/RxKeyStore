@@ -199,44 +199,4 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
                 .assertValue(false);
     }
 
-    @Test
-    public void getKeyPairGeneratorSpec() {
-    }
-
-    @Test
-    public void getKeyGenParameterSpec() {
-    }
-
-    @Test
-    public void getPrivateKey() {
-    }
-
-    @Test
-    public void getPrivateKeyIfAvailable() {
-    }
-
-    @Test
-    public void getPublicKey() {
-    }
-
-    @Test
-    public void getPublicKeyIfAvailable() {
-    }
-
-    @Test
-    public void getCertificate() {
-    }
-
-    @Test
-    public void getCertificateIfAvailable() {
-    }
-
-    @Test
-    public void getKeyPair() {
-    }
-
-    @Test
-    public void getKeyPairIfAvailable() {
-    }
-
 }

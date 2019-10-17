@@ -32,28 +32,4 @@ public class RxECCryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
         super.sign_subsequentCallsWithSameKey_emitsSameSignature();
     }
 
-    @Test
-    public void getBlockModes() {
-    }
-
-    @Test
-    public void getEncryptionPaddings() {
-    }
-
-    @Test
-    public void getSignaturePaddings() {
-    }
-
-    @Test
-    public void getDigests() {
-    }
-
-    @Test
-    public void getTransformationAlgorithm() {
-    }
-
-    @Test
-    public void getSignatureAlgorithm() {
-    }
-
 }
