@@ -202,10 +202,9 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
     @Override
     public Completable setKeyPair(@NonNull String alias, @NonNull KeyPair keyPair) {
         return createSelfSignedCertificate(keyPair)
-                .flatMapCompletable(certificate -> Completable.mergeArray(
-                        //setCertificate(alias, new KeyStore.TrustedCertificateEntry(certificate)),
-                        setPrivateKey(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{certificate})))
-                );
+                .map(certificate -> new Certificate[]{certificate})
+                .map(certificateChain -> new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), certificateChain))
+                .flatMapCompletable(privateKeyEntry -> setPrivateKey(alias, privateKeyEntry));
     }
 
     @Override
