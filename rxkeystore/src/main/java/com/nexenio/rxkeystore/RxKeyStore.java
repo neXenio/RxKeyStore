@@ -7,6 +7,7 @@ import java.security.cert.Certificate;
 import java.util.Collections;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
@@ -14,11 +15,17 @@ import io.reactivex.Single;
 
 public final class RxKeyStore {
 
+    public static final String PROVIDER_ANDROID_OPEN_SSL = "AndroidOpenSSL";
+    public static final String PROVIDER_ANDROID_KEY_STORE = "AndroidKeyStore";
+    public static final String PROVIDER_BOUNCY_CASTLE = "BC";
+
     public static final String TYPE_ANDROID = "AndroidKeyStore";
-    public static final String TYPE_BOUNCY_CASTLE = "BC";
+    public static final String TYPE_JKS = "JKS";
+    public static final String TYPE_BKS = "BKS";
 
     public static final String KEY_ALGORITHM_RSA = "RSA";
     public static final String KEY_ALGORITHM_EC = "EC";
+
     public static final String KEY_ALGORITHM_AES = "AES";
 
     public static final String TRANSFORMATION_RSA = "RSA/ECB/PKCS1Padding";
@@ -50,7 +57,13 @@ public final class RxKeyStore {
 
     public static final String CERTIFICATE_TYPE_X509 = "X.509";
 
-    private final String keyStoreType;
+    public static final String KEY_AGREEMENT_DH = "DH";
+    public static final String KEY_AGREEMENT_ECDH = "ECDH";
+
+    private final String type;
+
+    @Nullable
+    private final String provider;
 
     private KeyStore keyStore;
 
@@ -58,8 +71,13 @@ public final class RxKeyStore {
         this(TYPE_ANDROID);
     }
 
-    public RxKeyStore(@NonNull String keyStoreType) {
-        this.keyStoreType = keyStoreType;
+    public RxKeyStore(@NonNull String type) {
+        this(type, null);
+    }
+
+    public RxKeyStore(@NonNull String type, @Nullable String provider) {
+        this.type = type;
+        this.provider = provider;
     }
 
     public Single<KeyStore> getLoadedKeyStore() {
@@ -67,7 +85,7 @@ public final class RxKeyStore {
             if (keyStore != null) {
                 return Single.just(keyStore);
             } else {
-                return getLoadedKeyStore(keyStoreType)
+                return getLoadedKeyStore(type, provider)
                         .doOnSuccess(loadedKeyStore -> keyStore = loadedKeyStore);
             }
         });
@@ -104,7 +122,18 @@ public final class RxKeyStore {
                 ));
     }
 
-    private Completable deleteEntry(@NonNull String alias) {
+    public Completable setEntry(@NonNull String alias, @NonNull KeyStore.Entry entry) {
+        return setEntry(alias, entry, null);
+    }
+
+    public Completable setEntry(@NonNull String alias, @NonNull KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protectionParameter) {
+        return getLoadedKeyStore()
+                .flatMapCompletable(store -> Completable.fromAction(
+                        () -> store.setEntry(alias, entry, protectionParameter)
+                ));
+    }
+
+    public Completable deleteEntry(@NonNull String alias) {
         return getLoadedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(
                         () -> store.deleteEntry(alias)
@@ -116,13 +145,27 @@ public final class RxKeyStore {
                 .flatMapCompletable(this::deleteEntry);
     }
 
-    public String getKeyStoreType() {
-        return keyStoreType;
+    public String getType() {
+        return type;
     }
 
-    private static Single<KeyStore> getLoadedKeyStore(@NonNull String type) {
+    @Nullable
+    public String getProvider() {
+        return provider;
+    }
+
+    public boolean shouldUseDefaultProvider() {
+        return provider == null;
+    }
+
+    private static Single<KeyStore> getLoadedKeyStore(@NonNull String type, @Nullable String provider) {
         return Single.fromCallable(() -> {
-            KeyStore keyStore = KeyStore.getInstance(type);
+            KeyStore keyStore;
+            if (provider != null) {
+                keyStore = KeyStore.getInstance(type, provider);
+            } else {
+                keyStore = KeyStore.getInstance(type);
+            }
             keyStore.load(null);
             return keyStore;
         });

@@ -6,12 +6,15 @@ import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 import com.nexenio.rxkeystore.provider.asymmetric.rsa.RxRSACryptoProvider;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.Provider;
+import java.security.Security;
 import java.security.cert.Certificate;
 import java.util.Objects;
 
@@ -20,6 +23,8 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 public class RxKeyStoreTest {
 
@@ -51,6 +56,26 @@ public class RxKeyStoreTest {
         return asymmetricCryptoProvider.generateKeyPair(ALIAS_DEFAULT, context)
                 .doOnSuccess(keyPair -> this.defaultKeyPair = keyPair)
                 .ignoreElement();
+    }
+
+    @Ignore("Just for debugging purposes")
+    @Test
+    public void listSecurityProviders() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Provider provider : Security.getProviders()) {
+            stringBuilder.append(String.format("- %s: %s (version %.1f)\n",
+                    provider.getName(),
+                    provider.getInfo(),
+                    provider.getVersion()
+            ));
+            for (Provider.Service service : provider.getServices()) {
+                stringBuilder.append(String.format("\t- %s: %s\n",
+                        service.getType(),
+                        service.getAlgorithm()
+                ));
+            }
+        }
+        System.out.println("Available security providers:\n" + stringBuilder);
     }
 
     @Test
@@ -159,12 +184,31 @@ public class RxKeyStoreTest {
 
     @Test
     public void getKeyStoreType_initializedWithoutType_returnsDefaultType() {
-        assertEquals(RxKeyStore.TYPE_ANDROID, new RxKeyStore().getKeyStoreType());
+        assertEquals(RxKeyStore.TYPE_ANDROID, new RxKeyStore().getType());
     }
 
     @Test
     public void getKeyStoreType_initializedWithType_returnsSpecifiedType() {
-        assertEquals(RxKeyStore.TYPE_BOUNCY_CASTLE, new RxKeyStore(RxKeyStore.TYPE_BOUNCY_CASTLE).getKeyStoreType());
+        assertEquals(RxKeyStore.TYPE_ANDROID, new RxKeyStore(RxKeyStore.TYPE_ANDROID).getType());
+        assertEquals(RxKeyStore.TYPE_BKS, new RxKeyStore(RxKeyStore.TYPE_BKS).getType());
+    }
+
+    @Test
+    public void getKeyStoreProvider_initializedWithProvider_returnsSpecifiedProvider() {
+        assertEquals(RxKeyStore.PROVIDER_ANDROID_KEY_STORE, new RxKeyStore(RxKeyStore.TYPE_ANDROID, RxKeyStore.PROVIDER_ANDROID_KEY_STORE).getProvider());
+        assertEquals(RxKeyStore.PROVIDER_BOUNCY_CASTLE, new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE).getProvider());
+    }
+
+    @Test
+    public void shouldUseDefaultProvider_noProviderSpecified_returnsTrue() {
+        RxKeyStore rxKeyStore = new RxKeyStore();
+        assertTrue(rxKeyStore.shouldUseDefaultProvider());
+    }
+
+    @Test
+    public void shouldUseDefaultProvider_providerSpecified_returnsFalse() {
+        RxKeyStore rxKeyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+        assertFalse(rxKeyStore.shouldUseDefaultProvider());
     }
 
 }

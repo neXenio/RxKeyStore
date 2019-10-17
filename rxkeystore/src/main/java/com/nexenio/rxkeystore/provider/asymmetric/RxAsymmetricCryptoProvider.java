@@ -5,6 +5,7 @@ import android.content.Context;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
 import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
@@ -15,6 +16,8 @@ import io.reactivex.Maybe;
 import io.reactivex.Single;
 
 public interface RxAsymmetricCryptoProvider extends RxCryptoProvider {
+
+    Single<byte[]> generateSecret(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey);
 
     Single<byte[]> sign(@NonNull byte[] data, @NonNull PrivateKey privateKey);
 
@@ -39,5 +42,11 @@ public interface RxAsymmetricCryptoProvider extends RxCryptoProvider {
     Single<Certificate> getCertificate(@NonNull String alias);
 
     Maybe<Certificate> getCertificateIfAvailable(@NonNull String alias);
+
+    Completable setKeyPair(@NonNull String alias, @NonNull KeyPair keyPair);
+
+    Completable setPrivateKey(@NonNull String alias, @NonNull KeyStore.PrivateKeyEntry privateKeyEntry);
+
+    Completable setCertificate(@NonNull String alias, @NonNull KeyStore.TrustedCertificateEntry trustedCertificateEntry);
 
 }

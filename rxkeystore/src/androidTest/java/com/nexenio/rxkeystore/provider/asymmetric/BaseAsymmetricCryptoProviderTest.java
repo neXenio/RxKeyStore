@@ -6,18 +6,16 @@ import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
+import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Objects;
-
-import javax.crypto.IllegalBlockSizeException;
 
 import androidx.annotation.NonNull;
 import io.reactivex.Completable;
@@ -39,7 +37,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
     @Override
     protected Completable generateDefaultKeys() {
         return asymmetricCryptoProvider.generateKeyPair(ALIAS_DEFAULT, context)
-                .ignoreElement();
+                .flatMapCompletable(keyPair -> asymmetricCryptoProvider.setKeyPair(ALIAS_DEFAULT, keyPair));
     }
 
     @Test
@@ -51,17 +49,6 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
                         .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
                 .test()
                 .assertValue(decryptedBytes -> Arrays.equals(unencryptedBytes, decryptedBytes));
-    }
-
-    @Test
-    public void encrypt_invalidData_emitsError() {
-        byte[] unencryptedBytes = LOREM_IPSUM_LONG.getBytes(StandardCharsets.UTF_8);
-
-        asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
-                .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
-                        .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
-                .test()
-                .assertError(IllegalBlockSizeException.class);
     }
 
     /**
@@ -96,12 +83,25 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
 
     @Test
     public void decrypt_invalidData_emitsError() {
-        byte[] unencryptedBytes = LOREM_IPSUM_LONG.getBytes(StandardCharsets.UTF_8);
+        byte[] unencryptedBytes = new byte[]{};
 
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.decrypt(unencryptedBytes, null, keyPair.getPrivate()))
                 .test()
-                .assertError(IllegalBlockSizeException.class);
+                .assertError(BadBlockException.class);
+    }
+
+    @Test
+    public void generateSecretKey_matchingKeyPairs_sameSecretKey() {
+        KeyPair firstKeyPair = asymmetricCryptoProvider.getKeyPair(ALIAS_DEFAULT).blockingGet();
+        KeyPair secondKeyPair = asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context).blockingGet();
+
+        Single<byte[]> firstSecretSingle = asymmetricCryptoProvider.generateSecret(firstKeyPair.getPrivate(), secondKeyPair.getPublic());
+        Single<byte[]> secondSecretSingle = asymmetricCryptoProvider.generateSecret(secondKeyPair.getPrivate(), firstKeyPair.getPublic());
+
+        Single.zip(firstSecretSingle, secondSecretSingle, Arrays::equals)
+                .test()
+                .assertValue(true);
     }
 
     @Test
@@ -186,8 +186,8 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
     public void generateKeyPair_validConfiguration_emitsKeyPair() {
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .test()
-                .assertValue(keyPair -> keyPair.getPublic().getAlgorithm().equals("RSA")
-                        && keyPair.getPrivate().getAlgorithm().equals("RSA"));
+                .assertValue(keyPair -> keyPair.getPublic().getAlgorithm().equals(asymmetricCryptoProvider.getKeyAlgorithm())
+                        && keyPair.getPrivate().getAlgorithm().equals(asymmetricCryptoProvider.getKeyAlgorithm()));
     }
 
     @Test
@@ -197,46 +197,6 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         Single.zip(generateKeyPairSingle, generateKeyPairSingle, Objects::equals)
                 .test()
                 .assertValue(false);
-    }
-
-    @Test
-    public void getKeyPairGeneratorSpec() {
-    }
-
-    @Test
-    public void getKeyGenParameterSpec() {
-    }
-
-    @Test
-    public void getPrivateKey() {
-    }
-
-    @Test
-    public void getPrivateKeyIfAvailable() {
-    }
-
-    @Test
-    public void getPublicKey() {
-    }
-
-    @Test
-    public void getPublicKeyIfAvailable() {
-    }
-
-    @Test
-    public void getCertificate() {
-    }
-
-    @Test
-    public void getCertificateIfAvailable() {
-    }
-
-    @Test
-    public void getKeyPair() {
-    }
-
-    @Test
-    public void getKeyPairIfAvailable() {
     }
 
 }
