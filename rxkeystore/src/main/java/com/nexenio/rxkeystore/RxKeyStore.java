@@ -1,5 +1,7 @@
 package com.nexenio.rxkeystore;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -80,19 +82,55 @@ public final class RxKeyStore {
         this.provider = provider;
     }
 
-    public Single<KeyStore> getLoadedKeyStore() {
+    public Single<KeyStore> getInitializedKeyStore() {
         return Single.defer(() -> {
             if (keyStore != null) {
                 return Single.just(keyStore);
             } else {
-                return getLoadedKeyStore(type, provider)
-                        .doOnSuccess(loadedKeyStore -> keyStore = loadedKeyStore);
+                return getInitializedKeyStore(type, provider)
+                        .doOnSuccess(initializedKeyStore -> keyStore = initializedKeyStore);
             }
         });
     }
 
+    /**
+     * Loads this KeyStore from the given input stream.
+     *
+     * A password may be given to unlock the keystore (e.g. the keystore resides on a hardware token
+     * device), or to check the integrity of the keystore data.
+     *
+     * Note that if this keystore has already been loaded, it is reinitialized and loaded again from
+     * the given input stream.
+     *
+     * @param stream   the input stream from which the keystore is loaded
+     * @param password the password used to check the integrity of the keystore, the password used
+     *                 to unlock the keystore, or {@code null}
+     */
+    public Completable load(@NonNull InputStream stream, @Nullable String password) {
+        return getInitializedKeyStore()
+                .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> {
+                    char[] passwordChars = password != null ? password.toCharArray() : null;
+                    initializedKeyStore.load(stream, passwordChars);
+                }));
+    }
+
+    /**
+     * Stores this keystore to the given output stream, and protects its integrity with the given
+     * password.
+     *
+     * @param stream   the output stream to which this keystore is written.
+     * @param password the password to generate the keystore integrity check
+     */
+    public Completable save(@NonNull OutputStream stream, @Nullable String password) {
+        return getInitializedKeyStore()
+                .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> {
+                    char[] passwordChars = password != null ? password.toCharArray() : null;
+                    initializedKeyStore.store(stream, passwordChars);
+                }));
+    }
+
     public Flowable<String> getAliases() {
-        return getLoadedKeyStore()
+        return getInitializedKeyStore()
                 .map(KeyStore::aliases)
                 .map(Collections::list)
                 .flatMapPublisher(Flowable::fromIterable);
@@ -104,7 +142,7 @@ public final class RxKeyStore {
     }
 
     public Maybe<Key> getKeyIfAvailable(@NonNull String alias) {
-        return getLoadedKeyStore()
+        return getInitializedKeyStore()
                 .flatMapMaybe(keyStore -> Maybe.fromCallable(
                         () -> keyStore.getKey(alias, null)
                 ));
@@ -116,7 +154,7 @@ public final class RxKeyStore {
     }
 
     public Maybe<Certificate> getCertificateIfAvailable(@NonNull String alias) {
-        return getLoadedKeyStore()
+        return getInitializedKeyStore()
                 .flatMapMaybe(keyStore -> Maybe.fromCallable(
                         () -> keyStore.getCertificate(alias)
                 ));
@@ -127,14 +165,14 @@ public final class RxKeyStore {
     }
 
     public Completable setEntry(@NonNull String alias, @NonNull KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protectionParameter) {
-        return getLoadedKeyStore()
+        return getInitializedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(
                         () -> store.setEntry(alias, entry, protectionParameter)
                 ));
     }
 
     public Completable deleteEntry(@NonNull String alias) {
-        return getLoadedKeyStore()
+        return getInitializedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(
                         () -> store.deleteEntry(alias)
                 ));
@@ -158,7 +196,7 @@ public final class RxKeyStore {
         return provider == null;
     }
 
-    private static Single<KeyStore> getLoadedKeyStore(@NonNull String type, @Nullable String provider) {
+    private static Single<KeyStore> getInitializedKeyStore(@NonNull String type, @Nullable String provider) {
         return Single.fromCallable(() -> {
             KeyStore keyStore;
             if (provider != null) {

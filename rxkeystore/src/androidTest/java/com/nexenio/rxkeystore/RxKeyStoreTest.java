@@ -87,7 +87,7 @@ public class RxKeyStoreTest {
 
     @Test
     public void getLoadedKeyStore_subsequentCalls_emitsSameKeyStore() {
-        Single<KeyStore> getLoadedKeyStoreSingle = keyStore.getLoadedKeyStore();
+        Single<KeyStore> getLoadedKeyStoreSingle = keyStore.getInitializedKeyStore();
         Single.zip(getLoadedKeyStoreSingle, getLoadedKeyStoreSingle, Objects::equals)
                 .test()
                 .assertValue(true);
