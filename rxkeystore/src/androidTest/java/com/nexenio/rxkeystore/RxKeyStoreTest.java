@@ -9,6 +9,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -30,6 +33,9 @@ public class RxKeyStoreTest {
 
     private static final String ALIAS_DEFAULT = "default";
     private static final String ALIAS_NEW = "new";
+
+    private static final String KEY_STORE_FILE_NAME = "keys.ks";
+    private static final String KEY_STORE_PASSWORD = "password";
 
     private Context context;
     private RxKeyStore keyStore;
@@ -209,6 +215,67 @@ public class RxKeyStoreTest {
     public void shouldUseDefaultProvider_providerSpecified_returnsFalse() {
         RxKeyStore rxKeyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         assertFalse(rxKeyStore.shouldUseDefaultProvider());
+    }
+
+    @Test
+    public void load_validStream_loadsKeyStore() throws Exception {
+        // create a valid key store file
+        RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+        OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
+        store.save(outputStream, KEY_STORE_PASSWORD).blockingAwait();
+
+        // attempt to load the key store from file
+        InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
+        store.load(inputStream, KEY_STORE_PASSWORD)
+                .test()
+                .assertComplete();
+    }
+
+    @Test
+    public void load_invalidStream_emitsError() throws Exception {
+        // create an invalid key store file
+        OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
+        outputStream.write("This is not a valid key store".getBytes());
+        outputStream.close();
+
+        // attempt to load the file as key store
+        InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
+        RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+        store.load(inputStream, KEY_STORE_PASSWORD)
+                .test()
+                .assertError(IOException.class);
+    }
+
+    @Test
+    public void load_invalidPassword_emitsError() throws Exception {
+        // create a valid key store file
+        RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+        OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
+        store.save(outputStream, KEY_STORE_PASSWORD).blockingAwait();
+
+        // attempt to load the key store with a different password
+        InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
+        store.load(inputStream, "wrong password")
+                .test()
+                .assertError(IOException.class);
+    }
+
+    @Test
+    public void save_serializableKeyStore_savesKeyStore() throws Exception {
+        RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+        OutputStream stream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
+        store.save(stream, KEY_STORE_PASSWORD)
+                .test()
+                .assertComplete();
+    }
+
+    @Test
+    public void save_nonSerializableKeyStore_emitsError() throws Exception {
+        RxKeyStore store = new RxKeyStore(); // defaults to the Android key store
+        OutputStream stream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
+        store.save(stream, KEY_STORE_PASSWORD)
+                .test()
+                .assertError(UnsupportedOperationException.class);
     }
 
 }

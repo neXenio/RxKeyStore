@@ -94,7 +94,7 @@ public final class RxKeyStore {
     }
 
     /**
-     * Loads this KeyStore from the given input stream.
+     * Loads this key store from the given input stream.
      *
      * A password may be given to unlock the keystore (e.g. the keystore resides on a hardware token
      * device), or to check the integrity of the keystore data.
@@ -115,7 +115,7 @@ public final class RxKeyStore {
     }
 
     /**
-     * Stores this keystore to the given output stream, and protects its integrity with the given
+     * Stores this key store to the given output stream, and protects its integrity with the given
      * password.
      *
      * @param stream   the output stream to which this keystore is written.
