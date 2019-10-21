@@ -4,7 +4,10 @@ import android.content.Context;
 
 import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 import com.nexenio.rxkeystore.provider.asymmetric.rsa.RxRSACryptoProvider;
+import com.nexenio.rxkeystore.provider.symmetric.RxSymmetricCryptoProvider;
+import com.nexenio.rxkeystore.provider.symmetric.aes.RxAESCryptoProvider;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,7 +22,10 @@ import java.security.KeyStoreException;
 import java.security.Provider;
 import java.security.Security;
 import java.security.cert.Certificate;
+import java.util.Arrays;
 import java.util.Objects;
+
+import javax.crypto.SecretKey;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import io.reactivex.Completable;
@@ -46,12 +52,26 @@ public class RxKeyStoreTest {
     @Before
     public void setUp() {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        keyStore = new RxKeyStore();
+        keyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         asymmetricCryptoProvider = new RxRSACryptoProvider(keyStore);
+
+        setupSecurityProviders();
 
         resetKeyStore().andThen(generateDefaultKeyPair())
                 .test()
                 .assertComplete();
+    }
+
+    protected void setupSecurityProviders() {
+        final Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+        if (!(provider instanceof BouncyCastleProvider)) {
+            // Android registers its own BC provider. As it might be outdated and might not include
+            // all needed ciphers, we substitute it with a known BC bundled in the app.
+            // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
+            // of that it's possible to have another BC implementation loaded in VM.
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        }
     }
 
     private Completable resetKeyStore() {
@@ -61,7 +81,7 @@ public class RxKeyStoreTest {
     private Completable generateDefaultKeyPair() {
         return asymmetricCryptoProvider.generateKeyPair(ALIAS_DEFAULT, context)
                 .doOnSuccess(keyPair -> this.defaultKeyPair = keyPair)
-                .ignoreElement();
+                .flatMapCompletable(keyPair -> asymmetricCryptoProvider.setKeyPair(ALIAS_DEFAULT, keyPair));
     }
 
     @Ignore("Just for debugging purposes")
@@ -92,7 +112,7 @@ public class RxKeyStoreTest {
     }
 
     @Test
-    public void getLoadedKeyStore_subsequentCalls_emitsSameKeyStore() {
+    public void getInitializedKeyStore_subsequentCalls_emitsSameKeyStore() {
         Single<KeyStore> getLoadedKeyStoreSingle = keyStore.getInitializedKeyStore();
         Single.zip(getLoadedKeyStoreSingle, getLoadedKeyStoreSingle, Objects::equals)
                 .test()
@@ -111,7 +131,7 @@ public class RxKeyStoreTest {
     @Test
     public void getAliases_aliasesAvailable_emitsAliases() {
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
-                .ignoreElement()
+                .flatMapCompletable(keyPair -> asymmetricCryptoProvider.setKeyPair(ALIAS_NEW, keyPair))
                 .andThen(keyStore.getAliases())
                 .test()
                 .assertValueCount(2); // should contain ALIAS_DEFAULT and ALIAS_NEW
@@ -229,6 +249,32 @@ public class RxKeyStoreTest {
         store.load(inputStream, KEY_STORE_PASSWORD)
                 .test()
                 .assertComplete();
+    }
+
+    @Test
+    public void load_entriesPersisted_entriesRestored() throws Exception {
+        // create a key store that can be saved to a file
+        RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+        RxSymmetricCryptoProvider cryptoProvider = new RxAESCryptoProvider(store);
+
+        // generate and store a new key pair
+        SecretKey secretKey = cryptoProvider.generateKey(ALIAS_NEW, context).blockingGet();
+        cryptoProvider.setKey(ALIAS_NEW, secretKey).blockingAwait();
+
+        // create a valid key store file
+        OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
+        store.save(outputStream, KEY_STORE_PASSWORD).blockingAwait();
+
+        // load the key store from file
+        InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
+        store.load(inputStream, KEY_STORE_PASSWORD).blockingAwait();
+
+        // check if the key can be restored
+        RxSymmetricCryptoProvider restoredCryptoProvider = new RxAESCryptoProvider(store);
+        restoredCryptoProvider.getKey(ALIAS_NEW)
+                .map(Key::getEncoded)
+                .test()
+                .assertValue(encodedSecretKey -> Arrays.equals(encodedSecretKey, secretKey.getEncoded()));
     }
 
     @Test
