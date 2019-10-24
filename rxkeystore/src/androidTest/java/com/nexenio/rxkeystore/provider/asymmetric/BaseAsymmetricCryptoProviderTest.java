@@ -151,12 +151,14 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
     @Test
     public void verify_validSignatureFromWrongKey_emitsError() {
         byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
+        byte[] signature = asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
+                .flatMap(keyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, keyPair.getPrivate()))
+                .blockingGet();
 
-        asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
-                .flatMapCompletable(keyPair -> asymmetricCryptoProvider.sign(unencryptedBytes, keyPair.getPrivate())
-                        .flatMapCompletable(signature -> asymmetricCryptoProvider.verify(unencryptedBytes, signature, keyPair.getPublic())))
+        asymmetricCryptoProvider.getKeyPair(ALIAS_DEFAULT)
+                .flatMapCompletable(keyPair -> asymmetricCryptoProvider.verify(unencryptedBytes, signature, keyPair.getPublic()))
                 .test()
-                .assertComplete();
+                .assertError(SignatureException.class);
     }
 
     @Test
