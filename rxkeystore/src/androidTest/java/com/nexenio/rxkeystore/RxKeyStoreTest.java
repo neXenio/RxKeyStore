@@ -119,6 +119,8 @@ public class RxKeyStoreTest {
                 .assertValue(true);
     }
 
+    // TODO: 2019-10-22 add test for unsupported types and providers
+
     @Test
     public void getAliases_noneAvailable_completesEmpty() {
         keyStore.deleteAllEntries()

@@ -111,7 +111,9 @@ public final class RxKeyStore {
                 .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> {
                     char[] passwordChars = password != null ? password.toCharArray() : null;
                     initializedKeyStore.load(stream, passwordChars);
-                }));
+                })).onErrorResumeNext(throwable -> Completable.error(
+                        new RxKeyStoreException("Unable to load keystore", throwable)
+                ));
     }
 
     /**
@@ -126,7 +128,9 @@ public final class RxKeyStore {
                 .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> {
                     char[] passwordChars = password != null ? password.toCharArray() : null;
                     initializedKeyStore.store(stream, passwordChars);
-                }));
+                })).onErrorResumeNext(throwable -> Completable.error(
+                        new RxKeyStoreException("Unable to save keystore", throwable)
+                ));
     }
 
     public Flowable<String> getAliases() {
@@ -138,7 +142,7 @@ public final class RxKeyStore {
 
     public Single<Key> getKey(@NonNull String alias) {
         return getKeyIfAvailable(alias)
-                .switchIfEmpty(Single.error(new KeyStoreException("No key available with alias: " + alias)));
+                .switchIfEmpty(Single.error(new RxKeyStoreException("No key available with alias: " + alias)));
     }
 
     public Maybe<Key> getKeyIfAvailable(@NonNull String alias) {
@@ -150,7 +154,7 @@ public final class RxKeyStore {
 
     public Single<Certificate> getCertificate(@NonNull String alias) {
         return getCertificateIfAvailable(alias)
-                .switchIfEmpty(Single.error(new KeyStoreException("No certificate available with alias: " + alias)));
+                .switchIfEmpty(Single.error(new RxKeyStoreException("No certificate available with alias: " + alias)));
     }
 
     public Maybe<Certificate> getCertificateIfAvailable(@NonNull String alias) {
@@ -206,7 +210,9 @@ public final class RxKeyStore {
             }
             keyStore.load(null);
             return keyStore;
-        });
+        }).onErrorResumeNext(throwable -> Single.error(
+                new KeyStoreInitializationException("Unable to initialize keystore", throwable)
+        ));
     }
 
 }
