@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Key;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.util.Collections;
 
@@ -96,14 +95,14 @@ public final class RxKeyStore {
     /**
      * Loads this key store from the given input stream.
      *
-     * A password may be given to unlock the keystore (e.g. the keystore resides on a hardware token
-     * device), or to check the integrity of the keystore data.
+     * A password may be given to unlock the key store (e.g. the keystore resides on a hardware
+     * token device), or to check the integrity of the key store data.
      *
-     * Note that if this keystore has already been loaded, it is reinitialized and loaded again from
-     * the given input stream.
+     * Note that if this key store has already been loaded, it is reinitialized and loaded again
+     * from the given input stream.
      *
      * @param stream   the input stream from which the keystore is loaded
-     * @param password the password used to check the integrity of the keystore, the password used
+     * @param password the password used to check the integrity of the key store, the password used
      *                 to unlock the keystore, or {@code null}
      */
     public Completable load(@NonNull InputStream stream, @Nullable String password) {
@@ -112,7 +111,7 @@ public final class RxKeyStore {
                     char[] passwordChars = password != null ? password.toCharArray() : null;
                     initializedKeyStore.load(stream, passwordChars);
                 })).onErrorResumeNext(throwable -> Completable.error(
-                        new RxKeyStoreException("Unable to load keystore", throwable)
+                        new RxKeyStoreException("Unable to load key store", throwable)
                 ));
     }
 
@@ -129,7 +128,7 @@ public final class RxKeyStore {
                     char[] passwordChars = password != null ? password.toCharArray() : null;
                     initializedKeyStore.store(stream, passwordChars);
                 })).onErrorResumeNext(throwable -> Completable.error(
-                        new RxKeyStoreException("Unable to save keystore", throwable)
+                        new RxKeyStoreException("Unable to save key store", throwable)
                 ));
     }
 
@@ -142,7 +141,7 @@ public final class RxKeyStore {
 
     public Single<Key> getKey(@NonNull String alias) {
         return getKeyIfAvailable(alias)
-                .switchIfEmpty(Single.error(new RxKeyStoreException("No key available with alias: " + alias)));
+                .switchIfEmpty(Single.error(new KeyStoreEntryNotAvailableException(alias)));
     }
 
     public Maybe<Key> getKeyIfAvailable(@NonNull String alias) {
@@ -154,7 +153,7 @@ public final class RxKeyStore {
 
     public Single<Certificate> getCertificate(@NonNull String alias) {
         return getCertificateIfAvailable(alias)
-                .switchIfEmpty(Single.error(new RxKeyStoreException("No certificate available with alias: " + alias)));
+                .switchIfEmpty(Single.error(new KeyStoreEntryNotAvailableException(alias)));
     }
 
     public Maybe<Certificate> getCertificateIfAvailable(@NonNull String alias) {
@@ -172,6 +171,8 @@ public final class RxKeyStore {
         return getInitializedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(
                         () -> store.setEntry(alias, entry, protectionParameter)
+                )).onErrorResumeNext(throwable -> Completable.error(
+                        new RxKeyStoreException("Unable to set key store entry", throwable)
                 ));
     }
 
@@ -179,6 +180,8 @@ public final class RxKeyStore {
         return getInitializedKeyStore()
                 .flatMapCompletable(store -> Completable.fromAction(
                         () -> store.deleteEntry(alias)
+                )).onErrorResumeNext(throwable -> Completable.error(
+                        new RxKeyStoreException("Unable to delete key store entry", throwable)
                 ));
     }
 

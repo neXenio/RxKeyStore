@@ -12,13 +12,11 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.Provider;
 import java.security.Security;
 import java.security.cert.Certificate;
@@ -151,7 +149,7 @@ public class RxKeyStoreTest {
     public void getKey_invalidAlias_emitsError() {
         keyStore.getKey("asdf")
                 .test()
-                .assertError(KeyStoreException.class);
+                .assertError(KeyStoreEntryNotAvailableException.class);
     }
 
     @Test
@@ -182,7 +180,7 @@ public class RxKeyStoreTest {
     public void getCertificate_invalidAlias_emitsError() {
         keyStore.getCertificate("asdf")
                 .test()
-                .assertError(KeyStoreException.class);
+                .assertError(KeyStoreEntryNotAvailableException.class);
     }
 
     @Test
@@ -291,7 +289,7 @@ public class RxKeyStoreTest {
         RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         store.load(inputStream, KEY_STORE_PASSWORD)
                 .test()
-                .assertError(IOException.class);
+                .assertError(RxKeyStoreException.class);
     }
 
     @Test
@@ -305,7 +303,7 @@ public class RxKeyStoreTest {
         InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
         store.load(inputStream, "wrong password")
                 .test()
-                .assertError(IOException.class);
+                .assertError(RxKeyStoreException.class);
     }
 
     @Test
@@ -323,7 +321,7 @@ public class RxKeyStoreTest {
         OutputStream stream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
         store.save(stream, KEY_STORE_PASSWORD)
                 .test()
-                .assertError(UnsupportedOperationException.class);
+                .assertError(RxKeyStoreException.class);
     }
 
 }
