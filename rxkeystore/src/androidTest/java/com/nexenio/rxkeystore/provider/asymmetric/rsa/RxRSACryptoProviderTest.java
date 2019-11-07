@@ -1,6 +1,7 @@
 package com.nexenio.rxkeystore.provider.asymmetric.rsa;
 
 import com.nexenio.rxkeystore.RxKeyStore;
+import com.nexenio.rxkeystore.provider.EncryptionException;
 import com.nexenio.rxkeystore.provider.asymmetric.BaseAsymmetricCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 
@@ -42,7 +43,7 @@ public class RxRSACryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
                 .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
                         .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
                 .test()
-                .assertError(ArrayIndexOutOfBoundsException.class);
+                .assertError(EncryptionException.class);
     }
 
 }

@@ -4,16 +4,15 @@ import android.util.Base64;
 
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
+import com.nexenio.rxkeystore.provider.DecryptionException;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
-import org.bouncycastle.jcajce.provider.util.BadBlockException;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.SecureRandom;
-import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -88,7 +87,7 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
                 .flatMap(keyPair -> asymmetricCryptoProvider.decrypt(unencryptedBytes, null, keyPair.getPrivate()))
                 .test()
-                .assertError(BadBlockException.class);
+                .assertError(DecryptionException.class);
     }
 
     @Test
