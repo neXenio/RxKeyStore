@@ -2,8 +2,10 @@ package com.nexenio.rxkeystore.provider;
 
 public class EncryptionException extends RxCryptoProviderException {
 
+    private static final String DEFAULT_MESSAGE = "Unable to encrypt data";
+
     public EncryptionException() {
-        super();
+        super(DEFAULT_MESSAGE);
     }
 
     public EncryptionException(String message) {
@@ -15,7 +17,7 @@ public class EncryptionException extends RxCryptoProviderException {
     }
 
     public EncryptionException(Throwable cause) {
-        super(cause);
+        super(DEFAULT_MESSAGE, cause);
     }
 
 }

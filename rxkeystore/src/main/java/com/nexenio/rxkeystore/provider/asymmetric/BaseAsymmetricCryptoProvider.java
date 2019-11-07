@@ -6,8 +6,10 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
+import com.nexenio.rxkeystore.KeyStoreEntryNotAvailableException;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
+import com.nexenio.rxkeystore.provider.KeyGenerationException;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -30,12 +32,10 @@ import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Calendar;
@@ -62,7 +62,10 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                     keyAgreement.init(privateKey);
                     keyAgreement.doPhase(publicKey, true);
                     return keyAgreement.generateSecret();
-                }));
+                }))
+                .onErrorResumeNext(throwable -> Single.error(
+                        new KeyGenerationException("Unable to generate secret", throwable)
+                ));
     }
 
     @Override
@@ -72,7 +75,9 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                     signature.initSign(privateKey);
                     signature.update(data);
                     return signature.sign();
-                });
+                }).onErrorResumeNext(throwable -> Single.error(
+                        new SignatureException("Unable to create signature", throwable)
+                ));
     }
 
     @Override
@@ -82,7 +87,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                     if (verificationResult) {
                         return Completable.complete();
                     } else {
-                        return Completable.error(new SignatureException("Signature verification failed"));
+                        return Completable.error(new SignatureException("Signature is not valid"));
                     }
                 }));
     }
@@ -94,7 +99,9 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                     signatureInstance.initVerify(publicKey);
                     signatureInstance.update(data);
                     return signatureInstance.verify(signature);
-                });
+                }).onErrorResumeNext(throwable -> Single.error(
+                        new SignatureException("Unable to verify signature", throwable)
+                ));
     }
 
     @Override
@@ -104,7 +111,10 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                         .map(algorithmParameterSpec -> {
                             keyPairGenerator.initialize(algorithmParameterSpec);
                             return keyPairGenerator.generateKeyPair();
-                        }));
+                        }))
+                .onErrorResumeNext(throwable -> Single.error(
+                        new KeyGenerationException("Unable to generate key pair", throwable)
+                ));
     }
 
     @Override
@@ -191,7 +201,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
     @Override
     public Single<KeyPair> getKeyPair(@NonNull String alias) {
         return getKeyPairIfAvailable(alias)
-                .switchIfEmpty(Single.error(new KeyStoreException("No public and private key pair available with alias: " + alias)));
+                .switchIfEmpty(Single.error(new KeyStoreEntryNotAvailableException(alias)));
     }
 
     @Override
