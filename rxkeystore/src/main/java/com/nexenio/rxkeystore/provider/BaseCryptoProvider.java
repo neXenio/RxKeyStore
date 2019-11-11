@@ -34,7 +34,9 @@ public abstract class BaseCryptoProvider implements RxCryptoProvider {
                     cipher.init(Cipher.ENCRYPT_MODE, key);
                     byte[] encryptedData = cipher.doFinal(data);
                     return new Pair<>(encryptedData, cipher.getIV());
-                }));
+                })).onErrorResumeNext(throwable -> Single.error(
+                        new EncryptionException(throwable)
+                ));
     }
 
     @Override
@@ -48,7 +50,9 @@ public abstract class BaseCryptoProvider implements RxCryptoProvider {
                         cipher.init(Cipher.DECRYPT_MODE, key);
                     }
                     return cipher.doFinal(data);
-                }));
+                })).onErrorResumeNext(throwable -> Single.error(
+                        new DecryptionException(throwable)
+                ));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)

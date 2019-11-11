@@ -4,6 +4,7 @@ import android.util.Base64;
 
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
+import com.nexenio.rxkeystore.provider.DecryptionException;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 
@@ -11,7 +12,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -87,7 +87,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCryptoProvider
         symmetricCryptoProvider.generateKey(ALIAS_NEW, context)
                 .flatMap(key -> symmetricCryptoProvider.decrypt(unencryptedBytes, null, key))
                 .test()
-                .assertError(InvalidKeyException.class);
+                .assertError(DecryptionException.class);
     }
 
 }
