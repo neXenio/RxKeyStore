@@ -34,7 +34,9 @@ public abstract class BaseCryptoProvider implements RxCryptoProvider {
                     cipher.init(Cipher.ENCRYPT_MODE, key);
                     byte[] encryptedData = cipher.doFinal(data);
                     return new Pair<>(encryptedData, cipher.getIV());
-                }));
+                })).onErrorResumeNext(throwable -> Single.error(
+                        new EncryptionException(throwable)
+                ));
     }
 
     @Override
@@ -48,16 +50,24 @@ public abstract class BaseCryptoProvider implements RxCryptoProvider {
                         cipher.init(Cipher.DECRYPT_MODE, key);
                     }
                     return cipher.doFinal(data);
-                }));
+                })).onErrorResumeNext(throwable -> Single.error(
+                        new DecryptionException(throwable)
+                ));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     protected abstract Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias);
 
     protected Single<Cipher> getCipherInstance() {
-        return Single.defer(
-                () -> Single.just(Cipher.getInstance(getTransformationAlgorithm()))
-        );
+        return Single.defer(() -> {
+            Cipher cipher;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                cipher = Cipher.getInstance(getTransformationAlgorithm());
+            } else {
+                cipher = Cipher.getInstance(getTransformationAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(cipher);
+        });
     }
 
     protected abstract String getTransformationAlgorithm();

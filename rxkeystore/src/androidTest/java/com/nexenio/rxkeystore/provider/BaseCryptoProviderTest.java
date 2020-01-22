@@ -4,9 +4,14 @@ import android.content.Context;
 
 import com.nexenio.rxkeystore.RxKeyStore;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.security.Provider;
+import java.security.Security;
+
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import io.reactivex.Completable;
@@ -25,14 +30,33 @@ public abstract class BaseCryptoProviderTest {
     protected RxKeyStore keyStore;
     protected RxCryptoProvider cryptoProvider;
 
-    protected void setUp() {
+    @CallSuper
+    protected void setUpBeforeEachTest() {
+        setupSecurityProviders();
+
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        keyStore = new RxKeyStore();
+        keyStore = createKeyStore();
         cryptoProvider = createCryptoProvider(keyStore);
 
         resetKeyStore().andThen(generateDefaultKeys())
                 .test()
                 .assertComplete();
+    }
+
+    protected void setupSecurityProviders() {
+        final Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+        if (!(provider instanceof BouncyCastleProvider)) {
+            // Android registers its own BC provider. As it might be outdated and might not include
+            // all needed ciphers, we substitute it with a known BC bundled in the app.
+            // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
+            // of that it's possible to have another BC implementation loaded in VM.
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        }
+    }
+
+    protected RxKeyStore createKeyStore() {
+        return new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
     }
 
     protected abstract RxCryptoProvider createCryptoProvider(@NonNull RxKeyStore keyStore);
@@ -43,14 +67,15 @@ public abstract class BaseCryptoProviderTest {
 
     protected abstract Completable generateDefaultKeys();
 
+    /**
+     * Makes sure that {@link #generateDefaultKeys()} actually inserted something with the {@link
+     * #ALIAS_DEFAULT} into the {@link #keyStore}.
+     */
     @Test
-    public void getCipherInstance() {
-
-    }
-
-    @Test
-    public void getKeyAlgorithm() {
-
+    public void setup_defaultKeyInserted() {
+        keyStore.getAliases()
+                .test()
+                .assertValues(ALIAS_DEFAULT);
     }
 
 }

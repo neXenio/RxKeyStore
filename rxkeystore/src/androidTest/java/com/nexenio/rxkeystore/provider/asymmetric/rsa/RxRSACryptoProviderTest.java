@@ -1,19 +1,26 @@
 package com.nexenio.rxkeystore.provider.asymmetric.rsa;
 
 import com.nexenio.rxkeystore.RxKeyStore;
+import com.nexenio.rxkeystore.provider.EncryptionException;
 import com.nexenio.rxkeystore.provider.asymmetric.BaseAsymmetricCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
+
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class RxRSACryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
 
+    @CallSuper
     @Before
-    public void setUp() {
-        super.setUp();
+    @Override
+    public void setUpBeforeEachTest() {
+        super.setUpBeforeEachTest();
     }
 
     @Override
@@ -21,24 +28,22 @@ public class RxRSACryptoProviderTest extends BaseAsymmetricCryptoProviderTest {
         return new RxRSACryptoProvider(keyStore);
     }
 
+    @Ignore("DHKeyAgreement requires DHPrivateKey")
     @Test
-    public void getBlockModes() {
+    @Override
+    public void generateSecretKey_matchingKeyPairs_sameSecretKey() {
+        super.generateSecretKey_matchingKeyPairs_sameSecretKey();
     }
 
     @Test
-    public void getEncryptionPaddings() {
-    }
+    public void encrypt_invalidDataLength_emitsError() {
+        byte[] unencryptedBytes = LOREM_IPSUM_LONG.getBytes(StandardCharsets.UTF_8);
 
-    @Test
-    public void getSignaturePaddings() {
-    }
-
-    @Test
-    public void getDigests() {
-    }
-
-    @Test
-    public void getTransformationAlgorithm() {
+        asymmetricCryptoProvider.generateKeyPair(ALIAS_NEW, context)
+                .flatMap(keyPair -> asymmetricCryptoProvider.encrypt(unencryptedBytes, keyPair.getPublic())
+                        .flatMap(encryptedBytesAndIV -> asymmetricCryptoProvider.decrypt(encryptedBytesAndIV.first, encryptedBytesAndIV.second, keyPair.getPrivate())))
+                .test()
+                .assertError(EncryptionException.class);
     }
 
 }

@@ -6,21 +6,41 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
+import com.nexenio.rxkeystore.KeyStoreEntryNotAvailableException;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
+import com.nexenio.rxkeystore.provider.KeyGenerationException;
+
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v1CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
+import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
+import org.bouncycastle.operator.bc.BcContentSignerBuilder;
+import org.bouncycastle.operator.bc.BcECContentSignerBuilder;
+import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.KeyStoreException;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Calendar;
 
+import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
 
 import androidx.annotation.NonNull;
@@ -36,13 +56,28 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
     }
 
     @Override
+    public Single<byte[]> generateSecret(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey) {
+        return getKeyAgreementInstance()
+                .flatMap(keyAgreement -> Single.fromCallable(() -> {
+                    keyAgreement.init(privateKey);
+                    keyAgreement.doPhase(publicKey, true);
+                    return keyAgreement.generateSecret();
+                }))
+                .onErrorResumeNext(throwable -> Single.error(
+                        new KeyGenerationException("Unable to generate secret", throwable)
+                ));
+    }
+
+    @Override
     public Single<byte[]> sign(@NonNull byte[] data, @NonNull PrivateKey privateKey) {
         return getSignatureInstance()
                 .map(signature -> {
                     signature.initSign(privateKey);
                     signature.update(data);
                     return signature.sign();
-                });
+                }).onErrorResumeNext(throwable -> Single.error(
+                        new SignatureException("Unable to create signature", throwable)
+                ));
     }
 
     @Override
@@ -52,7 +87,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                     if (verificationResult) {
                         return Completable.complete();
                     } else {
-                        return Completable.error(new SignatureException("Signature verification failed"));
+                        return Completable.error(new SignatureException("Signature is not valid"));
                     }
                 }));
     }
@@ -64,17 +99,22 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                     signatureInstance.initVerify(publicKey);
                     signatureInstance.update(data);
                     return signatureInstance.verify(signature);
-                });
+                }).onErrorResumeNext(throwable -> Single.error(
+                        new SignatureException("Unable to verify signature", throwable)
+                ));
     }
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
-        return getKeyAlgorithmParameterSpec(alias, context)
-                .map(algorithmParameterSpec -> {
-                    KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyAlgorithm, rxKeyStore.getKeyStoreType());
-                    keyPairGenerator.initialize(algorithmParameterSpec);
-                    return keyPairGenerator.generateKeyPair();
-                });
+        return getKeyPairGeneratorInstance()
+                .flatMap(keyPairGenerator -> getKeyAlgorithmParameterSpec(alias, context)
+                        .map(algorithmParameterSpec -> {
+                            keyPairGenerator.initialize(algorithmParameterSpec);
+                            return keyPairGenerator.generateKeyPair();
+                        }))
+                .onErrorResumeNext(throwable -> Single.error(
+                        new KeyGenerationException("Unable to generate key pair", throwable)
+                ));
     }
 
     @Override
@@ -161,7 +201,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
     @Override
     public Single<KeyPair> getKeyPair(@NonNull String alias) {
         return getKeyPairIfAvailable(alias)
-                .switchIfEmpty(Single.error(new KeyStoreException("No public and private key pair available with alias: " + alias)));
+                .switchIfEmpty(Single.error(new KeyStoreEntryNotAvailableException(alias)));
     }
 
     @Override
@@ -169,10 +209,129 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
         return Maybe.zip(getPublicKeyIfAvailable(alias), getPrivateKeyIfAvailable(alias), KeyPair::new);
     }
 
+    @Override
+    public Completable setKeyPair(@NonNull String alias, @NonNull KeyPair keyPair) {
+        return createSelfSignedCertificate(keyPair)
+                .map(certificate -> new Certificate[]{certificate})
+                .map(certificateChain -> new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), certificateChain))
+                .flatMapCompletable(privateKeyEntry -> setPrivateKey(alias, privateKeyEntry));
+    }
+
+    @Override
+    public Completable setPrivateKey(@NonNull String alias, @NonNull KeyStore.PrivateKeyEntry privateKeyEntry) {
+        return rxKeyStore.setEntry(alias, privateKeyEntry);
+    }
+
+    @Override
+    public Completable setCertificate(@NonNull String alias, @NonNull KeyStore.TrustedCertificateEntry trustedCertificateEntry) {
+        return rxKeyStore.setEntry(alias, trustedCertificateEntry);
+    }
+
+    protected Single<Certificate> createSelfSignedCertificate(@NonNull KeyPair keyPair) {
+        return createContentSigner(keyPair.getPrivate())
+                .flatMap(contentSigner -> Single.fromCallable(() -> {
+                    Calendar startDate = Calendar.getInstance();
+                    Calendar endDate = Calendar.getInstance();
+                    endDate.add(Calendar.YEAR, 10);
+
+                    SubjectPublicKeyInfo keyInfo = SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded());
+
+                    X500NameBuilder nameBuilder = new X500NameBuilder(X500Name.getDefaultStyle());
+                    nameBuilder.addRDN(BCStyle.CN, "RxKeyStore");
+                    nameBuilder.addRDN(BCStyle.OU, "Cryptography");
+                    nameBuilder.addRDN(BCStyle.O, "neXenio");
+                    nameBuilder.addRDN(BCStyle.L, "Berlin");
+                    nameBuilder.addRDN(BCStyle.ST, "Berlin");
+                    nameBuilder.addRDN(BCStyle.C, "DE");
+
+                    X500Name issuer = nameBuilder.build();
+                    X500Name subject = nameBuilder.build();
+
+                    BigInteger serialNumber = new BigInteger(64, new SecureRandom());
+
+                    X509v1CertificateBuilder certificateBuilder = new X509v1CertificateBuilder(
+                            issuer,
+                            serialNumber,
+                            startDate.getTime(),
+                            endDate.getTime(),
+                            subject,
+                            keyInfo
+                    );
+
+                    JcaX509CertificateConverter certificateConverter = new JcaX509CertificateConverter();
+                    if (!rxKeyStore.shouldUseDefaultProvider()) {
+                        certificateConverter.setProvider(rxKeyStore.getProvider());
+                    }
+
+                    X509CertificateHolder certificateHolder = certificateBuilder.build(contentSigner);
+                    return certificateConverter.getCertificate(certificateHolder);
+                }));
+    }
+
+    protected Single<ContentSigner> createContentSigner(@NonNull PrivateKey privateKey) {
+        return Single.defer(() -> {
+            AsymmetricKeyParameter keyParameter = PrivateKeyFactory.createKey(privateKey.getEncoded());
+
+            AlgorithmIdentifier signatureId = new DefaultSignatureAlgorithmIdentifierFinder().find(getSignatureAlgorithm());
+            AlgorithmIdentifier digestId = new DefaultDigestAlgorithmIdentifierFinder().find(signatureId);
+
+            BcContentSignerBuilder contentSignerBuilder = null;
+
+            switch (privateKey.getAlgorithm()) {
+                case RxKeyStore.KEY_ALGORITHM_RSA:
+                    contentSignerBuilder = new BcRSAContentSignerBuilder(signatureId, digestId);
+                    break;
+                case RxKeyStore.KEY_ALGORITHM_EC:
+                    contentSignerBuilder = new BcECContentSignerBuilder(signatureId, digestId);
+                    break;
+            }
+
+            if (contentSignerBuilder == null) {
+                return Single.error(new IllegalArgumentException("Unable to create content signer for key algorithm: " + privateKey.getAlgorithm()));
+            }
+
+            return Single.just(contentSignerBuilder.build(keyParameter));
+        });
+    }
+
+    protected Single<KeyPairGenerator> getKeyPairGeneratorInstance() {
+        return Single.defer(() -> {
+            KeyPairGenerator keyPairGenerator;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                keyPairGenerator = KeyPairGenerator.getInstance(getKeyAlgorithm());
+            } else {
+                keyPairGenerator = KeyPairGenerator.getInstance(getKeyAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(keyPairGenerator);
+        });
+    }
+
     protected abstract String getSignatureAlgorithm();
 
     protected Single<Signature> getSignatureInstance() {
-        return Single.defer(() -> Single.just(Signature.getInstance(getSignatureAlgorithm())));
+        return Single.defer(() -> {
+            Signature signature;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                signature = Signature.getInstance(getSignatureAlgorithm());
+            } else {
+                signature = Signature.getInstance(getSignatureAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(signature);
+        });
+    }
+
+    protected abstract String getKeyAgreementAlgorithm();
+
+    protected Single<KeyAgreement> getKeyAgreementInstance() {
+        return Single.defer(() -> {
+            KeyAgreement keyAgreement;
+            if (rxKeyStore.shouldUseDefaultProvider()) {
+                keyAgreement = KeyAgreement.getInstance(getKeyAgreementAlgorithm());
+            } else {
+                keyAgreement = KeyAgreement.getInstance(getKeyAgreementAlgorithm(), rxKeyStore.getProvider());
+            }
+            return Single.just(keyAgreement);
+        });
     }
 
 }
