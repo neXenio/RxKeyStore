@@ -26,8 +26,8 @@ import java.util.Objects;
 import javax.crypto.SecretKey;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;

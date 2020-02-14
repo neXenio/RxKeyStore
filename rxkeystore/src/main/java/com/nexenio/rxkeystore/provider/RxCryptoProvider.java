@@ -8,7 +8,7 @@ import java.security.spec.AlgorithmParameterSpec;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 public interface RxCryptoProvider {
 

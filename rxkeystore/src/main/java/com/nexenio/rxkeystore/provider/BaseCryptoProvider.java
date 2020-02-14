@@ -14,7 +14,7 @@ import javax.crypto.spec.IvParameterSpec;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 public abstract class BaseCryptoProvider implements RxCryptoProvider {
 
