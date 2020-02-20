@@ -17,6 +17,8 @@ import io.reactivex.Single;
 
 public interface RxAsymmetricCryptoProvider extends RxCryptoProvider {
 
+    public static int TEST = 1;
+
     Single<byte[]> generateSecret(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey);
 
     Single<byte[]> sign(@NonNull byte[] data, @NonNull PrivateKey privateKey);

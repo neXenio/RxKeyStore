@@ -39,7 +39,7 @@ android {
 }
 
 dependencies {
-    implementation 'io.reactivex.rxjava2:rxjava:2.2.12'
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.17'
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.56'
 
