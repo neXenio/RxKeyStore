@@ -14,7 +14,7 @@ import java.security.Security;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 
 @Ignore("Abstract base class for tests only")
 public abstract class BaseCryptoProviderTest {

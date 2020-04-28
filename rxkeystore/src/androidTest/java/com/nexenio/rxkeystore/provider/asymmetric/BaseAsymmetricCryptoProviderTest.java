@@ -17,8 +17,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 @Ignore("Abstract base class for tests only")
 public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProviderTest {

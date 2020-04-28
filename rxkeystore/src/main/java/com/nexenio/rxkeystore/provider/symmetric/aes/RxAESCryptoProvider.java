@@ -10,7 +10,7 @@ import javax.crypto.SecretKey;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 import static com.nexenio.rxkeystore.RxKeyStore.BLOCK_MODE_GCM;
 import static com.nexenio.rxkeystore.RxKeyStore.ENCRYPTION_PADDING_NONE;
