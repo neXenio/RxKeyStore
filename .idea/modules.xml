@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Projects-RxKeyStore.iml" filepath="$PROJECT_DIR$/.idea/modules/Projects-RxKeyStore.iml" group="RxKeyStore" />
       <module fileurl="file://$PROJECT_DIR$/RxKeyStore.iml" filepath="$PROJECT_DIR$/RxKeyStore.iml" group="RxKeyStore" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/RxKeyStore-app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/RxKeyStore-app.iml" group="RxKeyStore/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/rxkeystore/RxKeyStore-rxkeystore.iml" filepath="$PROJECT_DIR$/.idea/modules/rxkeystore/RxKeyStore-rxkeystore.iml" group="RxKeyStore/rxkeystore" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="RxKeyStore/app" />
       <module fileurl="file://$PROJECT_DIR$/rxkeystore/rxkeystore.iml" filepath="$PROJECT_DIR$/rxkeystore/rxkeystore.iml" group="RxKeyStore/rxkeystore" />
     </modules>
