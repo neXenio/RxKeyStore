@@ -16,6 +16,8 @@ public interface RxCipherProvider extends RxCryptoProvider {
 
     Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @NonNull Key key);
 
+    Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @Nullable byte[] initializationVector, @NonNull Key key);
+
     Single<byte[]> decrypt(@NonNull byte[] data, @Nullable byte[] initializationVector, @NonNull Key key);
 
     String getKeyAlgorithm();

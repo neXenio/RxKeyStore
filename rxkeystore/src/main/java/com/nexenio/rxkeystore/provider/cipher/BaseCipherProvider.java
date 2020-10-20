@@ -7,6 +7,11 @@ import android.util.Pair;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
+import org.bouncycastle.crypto.BlockCipher;
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
+
 import java.security.Key;
 
 import javax.crypto.Cipher;
@@ -28,9 +33,20 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
 
     @Override
     public Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @NonNull Key key) {
+        return encrypt(data, null, key);
+    }
+
+    @Override
+    public Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @Nullable byte[] initializationVector, @NonNull Key key) {
         return getCipherInstance()
                 .flatMap(cipher -> Single.fromCallable(() -> {
-                    cipher.init(Cipher.ENCRYPT_MODE, key);
+                    if (cipher instanceof BlockCipher && initializationVector != null) {
+                        CipherParameters parameters = new ParametersWithIV(new KeyParameter(key.getEncoded()), initializationVector);
+                        BlockCipher blockCipher = ((BlockCipher) cipher);
+                        blockCipher.init(true, parameters);
+                    } else {
+                        cipher.init(Cipher.ENCRYPT_MODE, key);
+                    }
                     byte[] encryptedData = cipher.doFinal(data);
                     return new Pair<>(encryptedData, cipher.getIV());
                 })).onErrorResumeNext(throwable -> Single.error(
