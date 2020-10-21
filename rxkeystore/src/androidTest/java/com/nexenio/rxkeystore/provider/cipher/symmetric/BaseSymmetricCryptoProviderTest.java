@@ -50,6 +50,20 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCipherProvider
                 .assertValue(decryptedBytes -> Arrays.equals(unencryptedBytes, decryptedBytes));
     }
 
+    @Test
+    public void encrypt_subsequentCallsWithSameIv_emitsEqualData() {
+        byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
+        byte[] iv = "This IV is not random".getBytes(StandardCharsets.UTF_8);
+
+        Single<byte[]> getEncryptedBytesSingle = symmetricCryptoProvider.getKey(ALIAS_DEFAULT)
+                .flatMap(key -> symmetricCryptoProvider.encrypt(unencryptedBytes, iv, key))
+                .map(pair -> pair.first);
+
+        Single.zip(getEncryptedBytesSingle, getEncryptedBytesSingle, Arrays::equals)
+                .test()
+                .assertValue(true);
+    }
+
     /**
      * Subsequent calls to {@link RxAsymmetricCipherProvider#encrypt(byte[], Key)} should emit
      * distinct data for the same input, even if the same key was used. If the same data is emitted,
@@ -57,7 +71,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCipherProvider
      * provider.
      */
     @Test
-    public void encrypt_subsequentCallsWithSameKey_emitsDistinctData() {
+    public void encrypt_subsequentCallsWithoutIv_emitsDistinctData() {
         byte[] unencryptedBytes = Base64.decode(ENCODED_SYMMETRIC_KEY, Base64.DEFAULT);
 
         Single<byte[]> getEncryptedBytesSingle = symmetricCryptoProvider.getKey(ALIAS_DEFAULT)
