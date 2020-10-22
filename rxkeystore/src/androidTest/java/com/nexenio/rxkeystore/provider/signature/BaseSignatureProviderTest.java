@@ -19,7 +19,7 @@ public abstract class BaseSignatureProviderTest extends BaseCryptoProviderTest {
 
     protected static final byte[] MESSAGE = LOREM_IPSUM_LONG.getBytes(StandardCharsets.UTF_8);
 
-    protected RxSignatureProvider macProvider;
+    protected RxSignatureProvider signatureProvider;
     protected RxAsymmetricCipherProvider asymmetricCipherProvider;
     protected KeyPair firstKeyPair;
     protected KeyPair secondKeyPair;
@@ -34,8 +34,8 @@ public abstract class BaseSignatureProviderTest extends BaseCryptoProviderTest {
 
     @Override
     protected RxCryptoProvider createCryptoProvider(@NonNull RxKeyStore keyStore) {
-        this.macProvider = createSignatureProvider(keyStore);
-        return macProvider;
+        this.signatureProvider = createSignatureProvider(keyStore);
+        return signatureProvider;
     }
 
     protected abstract RxSignatureProvider createSignatureProvider(@NonNull RxKeyStore keyStore);
@@ -44,15 +44,15 @@ public abstract class BaseSignatureProviderTest extends BaseCryptoProviderTest {
 
     @Test
     public void sign_validData_emitsSignature() {
-        macProvider.sign(MESSAGE, firstKeyPair.getPrivate())
-                .flatMap(signature -> macProvider.getVerificationResult(MESSAGE, signature, firstKeyPair.getPublic()))
+        signatureProvider.sign(MESSAGE, firstKeyPair.getPrivate())
+                .flatMap(signature -> signatureProvider.getVerificationResult(MESSAGE, signature, firstKeyPair.getPublic()))
                 .test()
                 .assertValue(true);
     }
 
     @Test
     public void sign_subsequentCallsWithSameKey_emitsSameSignature() {
-        Single<byte[]> signSingle = macProvider.sign(MESSAGE, firstKeyPair.getPrivate());
+        Single<byte[]> signSingle = signatureProvider.sign(MESSAGE, firstKeyPair.getPrivate());
 
         Single.zip(signSingle, signSingle, Arrays::equals)
                 .test()
@@ -61,8 +61,8 @@ public abstract class BaseSignatureProviderTest extends BaseCryptoProviderTest {
 
     @Test
     public void verify_validSignature_completes() {
-        macProvider.sign(MESSAGE, firstKeyPair.getPrivate())
-                .flatMapCompletable(signature -> macProvider.verify(MESSAGE, signature, firstKeyPair.getPublic()))
+        signatureProvider.sign(MESSAGE, firstKeyPair.getPrivate())
+                .flatMapCompletable(signature -> signatureProvider.verify(MESSAGE, signature, firstKeyPair.getPublic()))
                 .test()
                 .assertComplete();
     }
@@ -70,23 +70,23 @@ public abstract class BaseSignatureProviderTest extends BaseCryptoProviderTest {
     @Test
     public void verify_invalidSignature_emitsError() {
         byte[] invalidSignature = "This is not valid".getBytes();
-        macProvider.verify(MESSAGE, invalidSignature, firstKeyPair.getPublic())
+        signatureProvider.verify(MESSAGE, invalidSignature, firstKeyPair.getPublic())
                 .test()
                 .assertError(RxSignatureException.class);
     }
 
     @Test
     public void verify_validSignatureFromWrongKey_emitsError() {
-        macProvider.sign(MESSAGE, secondKeyPair.getPrivate())
-                .flatMapCompletable(signature -> macProvider.verify(MESSAGE, signature, firstKeyPair.getPublic()))
+        signatureProvider.sign(MESSAGE, secondKeyPair.getPrivate())
+                .flatMapCompletable(signature -> signatureProvider.verify(MESSAGE, signature, firstKeyPair.getPublic()))
                 .test()
                 .assertError(RxSignatureException.class);
     }
 
     @Test
     public void getVerificationResult_validSignature_emitsTrue() {
-        macProvider.sign(MESSAGE, firstKeyPair.getPrivate())
-                .flatMap(signature -> macProvider.getVerificationResult(MESSAGE, signature, firstKeyPair.getPublic()))
+        signatureProvider.sign(MESSAGE, firstKeyPair.getPrivate())
+                .flatMap(signature -> signatureProvider.getVerificationResult(MESSAGE, signature, firstKeyPair.getPublic()))
                 .test()
                 .assertValue(true);
     }
@@ -94,7 +94,7 @@ public abstract class BaseSignatureProviderTest extends BaseCryptoProviderTest {
     @Test
     public void getVerificationResult_invalidSignature_emitsFalse() {
         byte[] invalidSignature = "This is not valid".getBytes();
-        macProvider.getVerificationResult(MESSAGE, invalidSignature, firstKeyPair.getPublic())
+        signatureProvider.getVerificationResult(MESSAGE, invalidSignature, firstKeyPair.getPublic())
                 .test()
                 .assertValue(false);
     }
