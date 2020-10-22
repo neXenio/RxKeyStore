@@ -56,8 +56,7 @@ public abstract class BaseSymmetricCryptoProviderTest extends BaseCipherProvider
         byte[] iv = "This IV is not random".getBytes(StandardCharsets.UTF_8);
 
         Single<byte[]> getEncryptedBytesSingle = symmetricCryptoProvider.getKey(ALIAS_DEFAULT)
-                .flatMap(key -> symmetricCryptoProvider.encrypt(unencryptedBytes, iv, key))
-                .map(pair -> pair.first);
+                .flatMap(key -> symmetricCryptoProvider.encrypt(unencryptedBytes, iv, key));
 
         Single.zip(getEncryptedBytesSingle, getEncryptedBytesSingle, Arrays::equals)
                 .test()

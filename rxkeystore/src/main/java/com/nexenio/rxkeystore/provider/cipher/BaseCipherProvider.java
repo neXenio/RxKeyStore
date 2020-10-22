@@ -28,21 +28,23 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
 
     @Override
     public Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @NonNull Key key) {
-        return encrypt(data, null, key);
+        return getCipherInstance()
+                .flatMap(cipher -> Single.fromCallable(() -> {
+                    cipher.init(Cipher.ENCRYPT_MODE, key);
+                    byte[] encryptedData = cipher.doFinal(data);
+                    return new Pair<>(encryptedData, cipher.getIV());
+                })).onErrorResumeNext(throwable -> Single.error(
+                        new RxEncryptionException(throwable)
+                ));
     }
 
     @Override
-    public Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @Nullable byte[] initializationVector, @NonNull Key key) {
+    public Single<byte[]> encrypt(@NonNull byte[] data, @NonNull byte[] initializationVector, @NonNull Key key) {
         return getCipherInstance()
                 .flatMap(cipher -> Single.fromCallable(() -> {
-                    if (initializationVector != null) {
-                        IvParameterSpec parameterSpec = new IvParameterSpec(initializationVector);
-                        cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
-                    } else {
-                        cipher.init(Cipher.ENCRYPT_MODE, key);
-                    }
-                    byte[] encryptedData = cipher.doFinal(data);
-                    return new Pair<>(encryptedData, cipher.getIV());
+                    IvParameterSpec parameterSpec = new IvParameterSpec(initializationVector);
+                    cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
+                    return cipher.doFinal(data);
                 })).onErrorResumeNext(throwable -> Single.error(
                         new RxEncryptionException(throwable)
                 ));
