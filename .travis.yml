@@ -29,7 +29,7 @@ android:
     - 'google-gdk-license-.+'
 
 before_install:
-  - yes | sdkmanager --licenses
+  - yes | sdkmanager "build-tools;$ANDROID_BUILD_TOOLS"
 
 before_script:
   - echo no | android create avd --force -n test -t android-$EMULATOR_API_LEVEL --abi armeabi-v7a
