@@ -41,8 +41,8 @@ before_script:
   - android list target
 
 script:
-  - ./gradlew test -PdisablePreDex --stacktrace
-  - ./gradlew connectedDebugAndroidTest -PdisablePreDex --stacktrace
+  - travis_wait ./gradlew test -PdisablePreDex --stacktrace
+  - travis_wait ./gradlew connectedDebugAndroidTest -PdisablePreDex --stacktrace
   - ./gradlew jacocoTestReport
 
 after_success:
