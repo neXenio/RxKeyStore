@@ -37,35 +37,55 @@ dependencies {
 
 The entrypoint of this library is [RxKeyStore][rxkeystore]. It provides the functionality of the [Android keystore][keystore] in a reactive fashion.
 
-To make use of it, the library also provides the [RxCryptoProvider][rxcryptoprovider] interface, further extended in [RxSymmetricCipherProvider][rxsymmetriccipherprovider], [RxAsymmetricCipherProvider][rxasymmetriccipherprovider] and other providers. You can implement them suiting your needs or use default implementations, e.g. [AES][rxaescryptoprovider], [RSA][rxrsacryptoprovider] or [EC][rxeccryptoprovider].
+To make use of it, the library also provides [RxCryptoProvider][rxcryptoprovider] interfaces, further extended in [RxSymmetricCipherProvider][rxsymmetriccipherprovider], [RxAsymmetricCipherProvider][rxasymmetriccipherprovider] and other providers. You can implement them suiting your needs or use default implementations, e.g. [AES][rxaescryptoprovider], [RSA][rxrsacryptoprovider] or [EC][rxeccryptoprovider].
 
 For usage samples, check out the [instrumentation tests][connectedtests].
 
-### Get a keystore
+### Key store
 
-To get an `RxKeyStore` instance, use the default constructor. You can also specify the keystore type and provider, in case you want to use a custom one.
+You can use an `RxKeyStore` instance to get or delete entries and to initialize an `RxCryptoProvider`.
+
+#### Get a key store
+
+To work with the default Android keystore, simply use the default constructor:
 
 ```java
-defaultAndroidKeyStore = new RxKeyStore();
-bouncyCastleKeyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+RxKeyStore androidKeyStore = new RxKeyStore();
 ```
 
 The actual `KeyStore` from the Android framework will be initialized lazily once its needed. You can also directly access it using `getLoadedKeyStore()`.
 
-You can use the `RxKeyStore` instance to get or delete entries and to initialize an `RxCryptoProvider`.
+You can also use a custom keystore type and crypto provider if you prefer:
 
-### Get a cipher provider
+```java
+RxKeyStore bouncyCastleKeyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
+```
 
-An `RxCipherProvider` is in charge of generating keys and using them for cryptographic operations. You can use default implementations for [AES][rxaescryptoprovider], [RSA][rxrsacryptoprovider] or [EC][rxeccryptoprovider]. You can also create your own by implementing `RxSymmetricCipherProvider` or `RxAsymmetricCipherProvider`.
+You may want to use the `load` and `save` methods to restore and persist custom keystores to the filesystem, which expect an `InputStream` or `OutputStream`, respectively.
+
+### Cipher provider
+
+An `RxCipherProvider` is in charge of generating keys and using them for cryptographic operations. All cipher providers either implement [RxSymmetricCipherProvider][rxsymmetriccipherprovider] or [RxAsymmetricCipherProvider][rxasymmetriccipherprovider].
+
+#### Get a cipher provider
+
+You can use default implementations for [AES][rxaescryptoprovider], [RSA][rxrsacryptoprovider] or [EC][rxeccryptoprovider]. You can also create your own by implementing `RxSymmetricCipherProvider` or `RxAsymmetricCipherProvider`.
 
 ```java
 RxAsymmetricCipherProvider cipherProvider = new RsaCipherProvider(keyStore);
 ```
 
-### Generate keys
+#### Generate keys
 
 ```java
-cipherProvider.generateKeyPair("my_fancy_keypair", context)
+// symmetric
+symmetricCipherProvider.generateKey("my_fancy_key", context)
+        .subscribe(secretKey -> {
+            // use secret key to encrypt data?
+        });
+
+// asymmetric
+asymmetricCipherProvider.generateKeyPair("my_fancy_keypair", context)
         .subscribe(keyPair -> {
             PublicKey publicKey = keyPair.getPublic();
             // transfer public key to second party?
@@ -75,13 +95,13 @@ cipherProvider.generateKeyPair("my_fancy_keypair", context)
         });
 ```
 
-### Encrypt data
+#### Encrypt data
 
 ```java
 byte[] unencryptedBytes = ...;
-PublicKey publicKey = ...;
+Key key = ...;
 
-cipherProvider.encrypt(unencryptedBytes, publicKey)
+cipherProvider.encrypt(unencryptedBytes, key)
         .subscribe(encryptedBytesAndIV -> {
             byte[] encryptedBytes = encryptedBytesAndIV.first;
             byte[] initializationVector = encryptedBytesAndIV.second;
@@ -94,36 +114,40 @@ If you don't want to use a random initialization vector, you can also specify a 
 ```java
 byte[] unencryptedBytes = ...;
 byte[] initializationVector = ...;
-PublicKey publicKey = ...;
+Key key = ...;
 
-cipherProvider.encrypt(unencryptedBytes, initializationVector, publicKey)
+cipherProvider.encrypt(unencryptedBytes, initializationVector, key)
         .subscribe(encryptedBytes -> {
             // transfer encrypted data and IV to second party?
         });
 ```
 
-### Decrypt data
+#### Decrypt data
 
 ```java
 byte[] encryptedBytes = ...;
 byte[] initializationVector = ...;
-PrivateKey privateKey = ...;
+Key key = ...;
 
-cipherProvider.decrypt(encryptedBytes, initializationVector, privateKey)
+cipherProvider.decrypt(encryptedBytes, initializationVector, key)
         .subscribe(decryptedBytes -> {
             // process decrypted data?
         });
 ```
 
-### Get a signature provider
+### Signature provider
 
 An `RxSignatureProvider` is in charge of generating and verifying [signatures](https://en.wikipedia.org/wiki/Digital_signature).
+
+#### Get a signature provider
+
+You can get an `RxSignatureProvider` instance by using the base class and specifying the desired signature algorithm. Available signature algorithms supported by the default Android crypto provider are listed [here](https://developer.android.com/reference/java/security/Signature).
 
 ```java
 RxSignatureProvider signatureProvider = new BaseSignatureProvider(keyStore, "SHA256withECDSA");
 ```
 
-### Create a signature
+#### Create a signature
 
 ```java
 byte[] data = ...;
@@ -135,7 +159,7 @@ signatureProvider.sign(data, privateKey)
         });
 ```
 
-### Verify a signature
+#### Verify a signature
 
 ```java
 byte[] data = ...;
@@ -152,15 +176,20 @@ signatureProvider.verify(data, signature, publicKey)
 
 If you don't want to treat invalid signatures as an error, you can also use `getVerificationResult` instead of `verify`, which will emit a `boolean` that you can check.
 
-### Get a MAC provider
+### MAC provider
 
 An `RxMacProvider` is in charge of generating and verifying [message authentication codes](https://en.wikipedia.org/wiki/Message_authentication_code), which you can use like signatures if you only have symmetric secret keys instead of asymmetric key pairs.
+
+#### Get a MAC provider
+
+You can get an `RxMacProvider` instance by using the base class and specifying the desired MAC algorithm. Available MAC algorithms supported by the default Android crypto provider are listed [here](https://developer.android.com/reference/javax/crypto/Mac).
+
 
 ```java
 RxMacProvider macProvider = new new BaseMacProvider(keyStore, "HmacSHA256");
 ```
 
-### Create a MAC
+#### Create a MAC
 
 ```java
 byte[] data = ...;
@@ -172,7 +201,7 @@ macProvider.sign(data, secretKey)
         });
 ```
 
-### Verify a MAC
+#### Verify a MAC
 
 ```java
 byte[] data = ...;
