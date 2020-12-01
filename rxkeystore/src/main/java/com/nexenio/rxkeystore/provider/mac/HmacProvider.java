@@ -4,6 +4,7 @@ import com.nexenio.rxkeystore.RxKeyStore;
 
 import androidx.annotation.NonNull;
 
+@Deprecated
 public class HmacProvider extends BaseMacProvider {
 
     public static final String HASH_ALGORITHM_MD5 = "MD5";
