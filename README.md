@@ -29,7 +29,7 @@ allprojects {
 }
 
 dependencies {
-    implementation 'com.github.neXenio:RxKeyStore:dev-SNAPSHOT'
+    implementation 'com.github.neXenio:RxKeyStore:0.4.0'
 }
 ```
 
