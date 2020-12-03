@@ -7,7 +7,7 @@ import org.junit.Before;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
-public class HmacProviderTest extends BaseMacProviderTest {
+public class HmacSha256ProviderTest extends BaseMacProviderTest {
 
     @CallSuper
     @Before
@@ -18,7 +18,7 @@ public class HmacProviderTest extends BaseMacProviderTest {
 
     @Override
     protected RxMacProvider createMacProvider(@NonNull RxKeyStore keyStore) {
-        return new HmacProvider(keyStore, HmacProvider.HASH_ALGORITHM_SHA256);
+        return new HmacSha256Provider(keyStore);
     }
 
 }
