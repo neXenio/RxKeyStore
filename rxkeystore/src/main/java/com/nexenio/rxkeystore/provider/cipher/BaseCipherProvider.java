@@ -79,9 +79,7 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
                 // See https://github.com/neXenio/RxKeyStore/issues/23
                 boolean isAffectedAndroidVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.M;
                 boolean isAffectedProvider = rxKeyStore.getProvider().equals(RxKeyStore.PROVIDER_ANDROID_KEY_STORE);
-                if (isAffectedAndroidVersion && isAffectedProvider) {
-                    useDefaultProvider = true;
-                }
+                useDefaultProvider = isAffectedAndroidVersion && isAffectedProvider;
             }
             if (useDefaultProvider) {
                 cipher = Cipher.getInstance(getTransformationAlgorithm());
