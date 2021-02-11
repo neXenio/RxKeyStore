@@ -32,7 +32,7 @@ allprojects {
 }
 
 dependencies {
-    implementation 'com.github.neXenio:RxKeyStore:0.4.0'
+    implementation 'com.github.neXenio:RxKeyStore:0.5.0'
 }
 ```
 
