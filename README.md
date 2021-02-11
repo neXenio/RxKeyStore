@@ -14,6 +14,9 @@ This library provides an [RxJava][rxjava] wrapper for the [Android Keystore][and
     - Generate key pairs
     - Encrypt & Decrypt
     - Sign & Verify
+- Utilities
+    - Base64 Encode and Decode
+    - Cryptographic hash generation
 
 ## Usage
 
@@ -184,9 +187,8 @@ An `RxMacProvider` is in charge of generating and verifying [message authenticat
 
 You can get an `RxMacProvider` instance by using the base class and specifying the desired MAC algorithm. Available MAC algorithms supported by the default Android crypto provider are listed [here](https://developer.android.com/reference/javax/crypto/Mac).
 
-
 ```java
-RxMacProvider macProvider = new new BaseMacProvider(keyStore, "HmacSHA256");
+RxMacProvider macProvider = new BaseMacProvider(keyStore, "HmacSHA256");
 ```
 
 #### Create a MAC
@@ -216,7 +218,28 @@ macProvider.verify(data, mac, secretKey)
         });
 ```
 
-If you don't want to treat invalid message authentication codes as an error, you can also use `getVerificationResult` instead of `verify`, which will emit a `boolean` that you can check.
+### Hash provider
+
+An `RxHashProvider` is in charge of generating [cryptographic hashes](https://en.wikipedia.org/wiki/Cryptographic_hash_function) from arbitrary-sized data, useful for generating checksums or fingerprints.
+
+#### Get a Hash provider
+
+You can get an `RxHashProvider` instance by using the base class and specifying the desired message digest algorithm. Available message digest algorithms supported by the default Android crypto provider are listed [here](https://developer.android.com/reference/java/security/MessageDigest).
+
+```java
+RxHashProvider hashProvider = new BaseHashProvider(keyStore, "SHA-256");
+```
+
+#### Create a hash
+
+```java
+byte[] data = ...;
+
+hashProvider.hash(data)
+        .subscribe(hash -> {
+            // use hash as checksum?
+        });
+```
 
 [releases]: https://github.com/neXenio/RxKeyStore/releases
 [jitpack]: https://jitpack.io/#neXenio/RxKeyStore/
