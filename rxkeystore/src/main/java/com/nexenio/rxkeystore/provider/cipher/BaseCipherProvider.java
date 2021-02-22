@@ -77,7 +77,7 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
                 // due to an issue on older Android SDK versions, we need to use the default provider
                 // when requesting a cipher instance instead of the AndroidKeyStore provider.
                 // See https://github.com/neXenio/RxKeyStore/issues/23
-                boolean isAffectedAndroidVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.M;
+                boolean isAffectedAndroidVersion = Build.VERSION.SDK_INT <= Build.VERSION_CODES.M;
                 boolean isAffectedProvider = rxKeyStore.getProvider().equals(RxKeyStore.PROVIDER_ANDROID_KEY_STORE);
                 useDefaultProvider = isAffectedAndroidVersion && isAffectedProvider;
             }
