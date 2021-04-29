@@ -8,6 +8,8 @@ import org.junit.Test;
 import androidx.annotation.CallSuper;
 import io.reactivex.rxjava3.core.Completable;
 
+import static org.junit.Assert.assertFalse;
+
 @Ignore("Abstract base class for tests only")
 public abstract class BaseCipherProviderTest extends BaseCryptoProviderTest {
 
@@ -40,6 +42,22 @@ public abstract class BaseCipherProviderTest extends BaseCryptoProviderTest {
         keyStore.getAliases()
                 .test()
                 .assertValues(ALIAS_DEFAULT);
+    }
+
+    @Test
+    public void shouldUseStrongBox_notPreferred_returnsFalse() {
+        keyStore.checkIfStrongBoxIsSupported(context).blockingAwait();
+        BaseCipherProvider baseCipherProvider = ((BaseCipherProvider) cryptoProvider);
+        baseCipherProvider.setUseStrongBoxIfAvailable(false);
+        assertFalse(baseCipherProvider.shouldUseStrongBox());
+    }
+
+    @Test
+    public void shouldUseStrongBox_preferredButNotSupported_returnsFalse() {
+        keyStore.checkIfStrongBoxIsSupported(context).blockingAwait();
+        BaseCipherProvider baseCipherProvider = ((BaseCipherProvider) cryptoProvider);
+        baseCipherProvider.setUseStrongBoxIfAvailable(true);
+        assertFalse(baseCipherProvider.shouldUseStrongBox());
     }
 
 }
