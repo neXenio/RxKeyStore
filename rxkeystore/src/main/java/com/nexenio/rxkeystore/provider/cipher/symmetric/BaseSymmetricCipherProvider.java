@@ -39,13 +39,14 @@ public abstract class BaseSymmetricCipherProvider extends BaseCipherProvider imp
 
     @Override
     public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
-        return Single.defer(() -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                return getKeyGenParameterSpec(alias);
-            } else {
-                return Single.error(new IllegalStateException("Symmetric keys are not supported by the keystore on Android versions before M"));
-            }
-        });
+        return rxKeyStore.checkIfStrongBoxIsSupported(context)
+                .andThen(Single.defer(() -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        return getKeyGenParameterSpec(alias);
+                    } else {
+                        return Single.error(new IllegalStateException("Symmetric keys are not supported by the keystore on Android versions before M"));
+                    }
+                }));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -56,6 +57,11 @@ public abstract class BaseSymmetricCipherProvider extends BaseCipherProvider imp
             KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(alias, keyPurposes)
                     .setBlockModes(getBlockModes())
                     .setEncryptionPaddings(getEncryptionPaddings());
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                builder.setIsStrongBoxBacked(shouldUseStrongBox());
+            }
+
             return builder.build();
         });
     }

@@ -83,14 +83,15 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
 
     @Override
     public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
-        return Single.defer(() -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                return getKeyGenParameterSpec(alias);
-            } else {
-                // TODO: 2019-07-26 test this implementation, signature verification didn't work
-                return getKeyPairGeneratorSpec(alias, context);
-            }
-        });
+        return rxKeyStore.checkIfStrongBoxIsSupported(context)
+                .andThen(Single.defer(() -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        return getKeyGenParameterSpec(alias);
+                    } else {
+                        // TODO: 2019-07-26 test this implementation, signature verification didn't work
+                        return getKeyPairGeneratorSpec(alias, context);
+                    }
+                }));
     }
 
     protected Single<KeyPairGeneratorSpec> getKeyPairGeneratorSpec(@NonNull String alias, @NonNull Context context) {
@@ -120,6 +121,11 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
                     .setEncryptionPaddings(getEncryptionPaddings())
                     .setSignaturePaddings(getSignaturePaddings())
                     .setDigests(getDigests());
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                builder.setIsStrongBoxBacked(shouldUseStrongBox());
+            }
+
             return builder.build();
         });
     }
