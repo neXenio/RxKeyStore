@@ -20,6 +20,7 @@ import io.reactivex.rxjava3.core.Single;
 public abstract class BaseCipherProvider extends BaseCryptoProvider implements RxCipherProvider {
 
     protected final String keyAlgorithm;
+    protected boolean useStrongBoxIfAvailable;
 
     public BaseCipherProvider(RxKeyStore rxKeyStore, String keyAlgorithm) {
         super(rxKeyStore);
@@ -94,9 +95,25 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
 
     protected abstract String getTransformationAlgorithm();
 
+    protected boolean shouldUseStrongBox() {
+        if (!useStrongBoxIfAvailable) {
+            return false;
+        }
+        Boolean supported = rxKeyStore.getIsStrongBoxSupported();
+        return supported != null && supported;
+    }
+
     @Override
     public String getKeyAlgorithm() {
         return keyAlgorithm;
+    }
+
+    public boolean getUseStrongBoxIfAvailable() {
+        return useStrongBoxIfAvailable;
+    }
+
+    public void setUseStrongBoxIfAvailable(boolean useStrongBoxIfAvailable) {
+        this.useStrongBoxIfAvailable = useStrongBoxIfAvailable;
     }
 
 }
