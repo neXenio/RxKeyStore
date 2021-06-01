@@ -39,6 +39,7 @@ import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Calendar;
+import java.util.Locale;
 
 import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
@@ -48,6 +49,8 @@ import androidx.annotation.RequiresApi;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+
+import static com.nexenio.rxkeystore.RxKeyStore.PROVIDER_ANDROID_KEY_STORE;
 
 public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider implements RxAsymmetricCryptoProvider {
 
@@ -106,7 +109,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
-        return getKeyPairGeneratorInstance()
+        Single<KeyPair> keyPairGenerationSingle = getKeyPairGeneratorInstance()
                 .flatMap(keyPairGenerator -> getKeyAlgorithmParameterSpec(alias, context)
                         .map(algorithmParameterSpec -> {
                             keyPairGenerator.initialize(algorithmParameterSpec);
@@ -115,6 +118,18 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                 .onErrorResumeNext(throwable -> Single.error(
                         new KeyGenerationException("Unable to generate key pair", throwable)
                 ));
+
+        if (rxKeyStore.getProvider() != null && rxKeyStore.getProvider().equals(PROVIDER_ANDROID_KEY_STORE) && Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
+            // Work-around for incorrect handling of languages that go from right to left.
+            // See https://github.com/AzureAD/azure-activedirectory-library-for-android/wiki/Common-Issues-With-AndroidKeyStore for more information
+            // See https://github.com/marcin-adamczewski/media-cipher/blob/master/library/src/main/java/com/appunite/mediacipher/crypto/AESCrypterBelowM.java
+            return Single.just(Locale.getDefault())
+                    .flatMap(defaultLocale -> keyPairGenerationSingle
+                            .doOnSubscribe(disposable -> Locale.setDefault(Locale.ENGLISH))
+                            .doFinally(() -> Locale.setDefault(defaultLocale)));
+        } else {
+            return keyPairGenerationSingle;
+        }
     }
 
     @Override
