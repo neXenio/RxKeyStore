@@ -109,27 +109,33 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
-        Single<KeyPair> keyPairGenerationSingle = getKeyPairGeneratorInstance()
-                .flatMap(keyPairGenerator -> getKeyAlgorithmParameterSpec(alias, context)
-                        .map(algorithmParameterSpec -> {
-                            keyPairGenerator.initialize(algorithmParameterSpec);
-                            return keyPairGenerator.generateKeyPair();
-                        }))
-                .onErrorResumeNext(throwable -> Single.error(
-                        new KeyGenerationException("Unable to generate key pair", throwable)
-                ));
+        return Single.defer(() -> Single.just(rxKeyStore))
+                .flatMap(keyStore -> {
+                    Single<KeyPair> keyPairGenerationSingle = getKeyPairGeneratorInstance()
+                            .flatMap(keyPairGenerator -> generateKeyPair(alias, context, keyPairGenerator))
+                            .onErrorResumeNext(throwable -> Single.error(
+                                    new KeyGenerationException("Unable to generate key pair", throwable)
+                            ));
+                    if (keyStore.getProvider() != null && keyStore.getProvider().equals(PROVIDER_ANDROID_KEY_STORE) && Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+                        // Work-around for incorrect handling of languages that go from right to left.
+                        // See https://github.com/AzureAD/azure-activedirectory-library-for-android/wiki/Common-Issues-With-AndroidKeyStore for more information
+                        // See https://github.com/marcin-adamczewski/media-cipher/blob/master/library/src/main/java/com/appunite/mediacipher/crypto/AESCrypterBelowM.java
+                        return Single.just(Locale.getDefault())
+                                .flatMap(defaultLocale -> keyPairGenerationSingle
+                                        .doOnSubscribe(disposable -> Locale.setDefault(Locale.ENGLISH))
+                                        .doFinally(() -> Locale.setDefault(defaultLocale)));
+                    } else {
+                        return keyPairGenerationSingle;
+                    }
+                });
+    }
 
-        if (rxKeyStore.getProvider() != null && rxKeyStore.getProvider().equals(PROVIDER_ANDROID_KEY_STORE) && Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) {
-            // Work-around for incorrect handling of languages that go from right to left.
-            // See https://github.com/AzureAD/azure-activedirectory-library-for-android/wiki/Common-Issues-With-AndroidKeyStore for more information
-            // See https://github.com/marcin-adamczewski/media-cipher/blob/master/library/src/main/java/com/appunite/mediacipher/crypto/AESCrypterBelowM.java
-            return Single.just(Locale.getDefault())
-                    .flatMap(defaultLocale -> keyPairGenerationSingle
-                            .doOnSubscribe(disposable -> Locale.setDefault(Locale.ENGLISH))
-                            .doFinally(() -> Locale.setDefault(defaultLocale)));
-        } else {
-            return keyPairGenerationSingle;
-        }
+    private Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
+        return getKeyAlgorithmParameterSpec(alias, context)
+                .map(algorithmParameterSpec -> {
+                    keyPairGenerator.initialize(algorithmParameterSpec);
+                    return keyPairGenerator.generateKeyPair();
+                });
     }
 
     @Override
