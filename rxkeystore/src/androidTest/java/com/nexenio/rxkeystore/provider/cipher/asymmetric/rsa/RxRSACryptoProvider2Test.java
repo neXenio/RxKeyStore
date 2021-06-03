@@ -1,31 +1,28 @@
-package com.nexenio.rxkeystore.provider.asymmetric.rsa;
+package com.nexenio.rxkeystore.provider.cipher.asymmetric.rsa;
 
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
-import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
+import com.nexenio.rxkeystore.provider.cipher.asymmetric.RxAsymmetricCipherProvider;
 
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Locale;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
-import androidx.test.platform.app.InstrumentationRegistry;
-import io.reactivex.Completable;
 
 public class RxRSACryptoProvider2Test extends BaseCryptoProviderTest {
 
-    protected RxAsymmetricCryptoProvider asymmetricCryptoProvider;
+    protected RxAsymmetricCipherProvider asymmetricCryptoProvider;
 
     @Before
     @Override
+    @CallSuper
     public void setUpBeforeEachTest() {
-        context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        keyStore = createKeyStore();
-        cryptoProvider = createCryptoProvider(keyStore);
+        super.setUpBeforeEachTest();
     }
 
     @Override
@@ -39,13 +36,8 @@ public class RxRSACryptoProvider2Test extends BaseCryptoProviderTest {
         return asymmetricCryptoProvider;
     }
 
-    @Override
-    protected Completable generateDefaultKeys() {
-        return null;
-    }
-
-    protected RxAsymmetricCryptoProvider createAsymmetricCryptoProvider(@NonNull RxKeyStore keyStore) {
-        return new RxRSACryptoProvider(keyStore);
+    protected RxAsymmetricCipherProvider createAsymmetricCryptoProvider(@NonNull RxKeyStore keyStore) {
+        return new RsaCipherProvider(keyStore);
     }
 
     @Test
@@ -63,13 +55,6 @@ public class RxRSACryptoProvider2Test extends BaseCryptoProviderTest {
             // clean up
             Locale.setDefault(actualLocale);
         }
-    }
-
-    @Ignore("Only test bug fix")
-    @Test
-    @Override
-    public void setup_defaultKeyInserted() {
-
     }
 
 }

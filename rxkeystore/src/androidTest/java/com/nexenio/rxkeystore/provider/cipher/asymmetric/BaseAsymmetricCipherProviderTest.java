@@ -3,9 +3,9 @@ package com.nexenio.rxkeystore.provider.cipher.asymmetric;
 import android.util.Base64;
 
 import com.nexenio.rxkeystore.RxKeyStore;
+import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 import com.nexenio.rxkeystore.provider.cipher.BaseCipherProviderTest;
 import com.nexenio.rxkeystore.provider.cipher.RxDecryptionException;
-import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
 import org.junit.Assert;
 import org.junit.Ignore;

@@ -4,12 +4,24 @@ import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.symmetric.BaseSymmetricCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.cipher.symmetric.RxSymmetricCipherProvider;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class RxAESCryptoProviderTest extends BaseSymmetricCryptoProviderTest {
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        setupSecurityProviders();
+    }
+
+    @AfterClass
+    public static void cleanUpAfterClass() {
+        cleanUpSecurityProviders();
+    }
 
     @CallSuper
     @Before

@@ -52,7 +52,7 @@ import io.reactivex.rxjava3.core.Single;
 
 import static com.nexenio.rxkeystore.RxKeyStore.PROVIDER_ANDROID_KEY_STORE;
 
-public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider implements RxAsymmetricCryptoProvider {
+public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider implements RxAsymmetricCipherProvider {
 
     public BaseAsymmetricCipherProvider(RxKeyStore rxKeyStore, String keyAlgorithm) {
         super(rxKeyStore, keyAlgorithm);
