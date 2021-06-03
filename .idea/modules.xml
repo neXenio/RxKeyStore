@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/Projects.RxKeyStore.iml" filepath="$PROJECT_DIR$/.idea/modules/Projects.RxKeyStore.iml" />
       <module fileurl="file://$PROJECT_DIR$/RxKeyStore.iml" filepath="$PROJECT_DIR$/RxKeyStore.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/RxKeyStore.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/RxKeyStore.app.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/rxkeystore/RxKeyStore.rxkeystore.iml" filepath="$PROJECT_DIR$/.idea/modules/rxkeystore/RxKeyStore.rxkeystore.iml" />
