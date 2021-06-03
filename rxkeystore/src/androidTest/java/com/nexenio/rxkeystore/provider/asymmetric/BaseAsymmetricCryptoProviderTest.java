@@ -7,6 +7,7 @@ import com.nexenio.rxkeystore.provider.BaseCryptoProviderTest;
 import com.nexenio.rxkeystore.provider.DecryptionException;
 import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -14,6 +15,7 @@ import java.security.Key;
 import java.security.KeyPair;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import androidx.annotation.NonNull;
@@ -198,6 +200,23 @@ public abstract class BaseAsymmetricCryptoProviderTest extends BaseCryptoProvide
         Single.zip(generateKeyPairSingle, generateKeyPairSingle, Objects::equals)
                 .test()
                 .assertValue(false);
+    }
+
+    @Test
+    public void generateKeyPair_arabicAsLocale_emitsKeyPair() {
+        Locale actualLocale = Locale.getDefault();
+        Locale expectedLocale = new Locale("ar");
+        Locale.setDefault(expectedLocale);
+
+        try {
+            asymmetricCryptoProvider.generateKeyPair("alias", context)
+                    .test()
+                    .assertNoErrors();
+            Assert.assertEquals(Locale.getDefault(), expectedLocale);
+        } finally {
+            // clean up
+            Locale.setDefault(actualLocale);
+        }
     }
 
 }

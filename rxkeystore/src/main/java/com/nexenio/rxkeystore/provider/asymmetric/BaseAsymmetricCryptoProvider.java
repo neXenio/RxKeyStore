@@ -109,14 +109,14 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
-        return Single.defer(() -> Single.just(rxKeyStore))
+        return Single.just(rxKeyStore)
                 .flatMap(keyStore -> {
                     Single<KeyPair> keyPairGenerationSingle = getKeyPairGeneratorInstance()
                             .flatMap(keyPairGenerator -> generateKeyPair(alias, context, keyPairGenerator))
                             .onErrorResumeNext(throwable -> Single.error(
                                     new KeyGenerationException("Unable to generate key pair", throwable)
                             ));
-                    if (keyStore.getProvider() != null && keyStore.getProvider().equals(PROVIDER_ANDROID_KEY_STORE) && Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+                    if (PROVIDER_ANDROID_KEY_STORE.equals(keyStore.getProvider()) && Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
                         // Work-around for incorrect handling of languages that go from right to left.
                         // See https://github.com/AzureAD/azure-activedirectory-library-for-android/wiki/Common-Issues-With-AndroidKeyStore for more information
                         // See https://github.com/marcin-adamczewski/media-cipher/blob/master/library/src/main/java/com/appunite/mediacipher/crypto/AESCrypterBelowM.java
@@ -130,7 +130,7 @@ public abstract class BaseAsymmetricCryptoProvider extends BaseCryptoProvider im
                 });
     }
 
-    private Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
+    protected Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
         return getKeyAlgorithmParameterSpec(alias, context)
                 .map(algorithmParameterSpec -> {
                     keyPairGenerator.initialize(algorithmParameterSpec);
