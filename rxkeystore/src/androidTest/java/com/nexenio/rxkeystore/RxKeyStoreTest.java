@@ -2,10 +2,10 @@ package com.nexenio.rxkeystore;
 
 import android.content.Context;
 
-import com.nexenio.rxkeystore.provider.asymmetric.RxAsymmetricCryptoProvider;
-import com.nexenio.rxkeystore.provider.asymmetric.rsa.RxRSACryptoProvider;
-import com.nexenio.rxkeystore.provider.symmetric.RxSymmetricCryptoProvider;
-import com.nexenio.rxkeystore.provider.symmetric.aes.RxAESCryptoProvider;
+import com.nexenio.rxkeystore.provider.cipher.asymmetric.RxAsymmetricCipherProvider;
+import com.nexenio.rxkeystore.provider.cipher.asymmetric.rsa.RsaCipherProvider;
+import com.nexenio.rxkeystore.provider.cipher.symmetric.RxSymmetricCipherProvider;
+import com.nexenio.rxkeystore.provider.cipher.symmetric.aes.AesCipherProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Before;
@@ -26,8 +26,8 @@ import java.util.Objects;
 import javax.crypto.SecretKey;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -43,7 +43,7 @@ public class RxKeyStoreTest {
 
     private Context context;
     private RxKeyStore keyStore;
-    private RxAsymmetricCryptoProvider asymmetricCryptoProvider;
+    private RxAsymmetricCipherProvider asymmetricCryptoProvider;
 
     private KeyPair defaultKeyPair;
 
@@ -51,7 +51,7 @@ public class RxKeyStoreTest {
     public void setUp() {
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         keyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
-        asymmetricCryptoProvider = new RxRSACryptoProvider(keyStore);
+        asymmetricCryptoProvider = new RsaCipherProvider(keyStore);
 
         setupSecurityProviders();
 
@@ -255,7 +255,7 @@ public class RxKeyStoreTest {
     public void load_entriesPersisted_entriesRestored() throws Exception {
         // create a key store that can be saved to a file
         RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
-        RxSymmetricCryptoProvider cryptoProvider = new RxAESCryptoProvider(store);
+        RxSymmetricCipherProvider cryptoProvider = new AesCipherProvider(store);
 
         // generate and store a new key pair
         SecretKey secretKey = cryptoProvider.generateKey(ALIAS_NEW, context).blockingGet();
@@ -270,7 +270,7 @@ public class RxKeyStoreTest {
         store.load(inputStream, KEY_STORE_PASSWORD).blockingAwait();
 
         // check if the key can be restored
-        RxSymmetricCryptoProvider restoredCryptoProvider = new RxAESCryptoProvider(store);
+        RxSymmetricCipherProvider restoredCryptoProvider = new AesCipherProvider(store);
         restoredCryptoProvider.getKey(ALIAS_NEW)
                 .map(Key::getEncoded)
                 .test()

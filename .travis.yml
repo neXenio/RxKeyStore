@@ -3,16 +3,25 @@ jdk: oraclejdk8
 
 env:
   global:
-    - ANDROID_BUILD_TOOLS=29.0.0
-    - ANDROID_API_LEVEL=29
+    - ANDROID_BUILD_TOOLS=29.0.2
+    - ANDROID_API_LEVEL=30
     - EMULATOR_API_LEVEL=24
-    - ADB_INSTALL_TIMEOUT=10
+    - ADB_INSTALL_TIMEOUT=15
+
+before_cache:
+  - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
+
+cache:
+  directories:
+    - $HOME/.gradle/daemon      # Cache daemon logs
+    - $HOME/.gradle/native      # Cache library downloaded from the gradle dependency
+    - $HOME/.gradle/wrapper     # Cache the gradle
 
 android:
 
   components:
     - tools
-    - tools
+    - tools # Running this twice get's the latest build tools
     - platform-tools
     - build-tools-$ANDROID_BUILD_TOOLS
     - android-$ANDROID_API_LEVEL
@@ -28,6 +37,10 @@ android:
     - 'android-sdk-license-.+'
     - 'google-gdk-license-.+'
 
+before_install:
+  - yes | sdkmanager "build-tools;${ANDROID_BUILD_TOOLS}"
+  - yes | sdkmanager "platforms;android-${ANDROID_API_LEVEL}"
+
 before_script:
   - echo no | android create avd --force -n test -t android-$EMULATOR_API_LEVEL --abi armeabi-v7a
   - emulator -avd test -no-window &
@@ -37,8 +50,8 @@ before_script:
   - android list target
 
 script:
-  - ./gradlew test -PdisablePreDex --stacktrace
-  - ./gradlew connectedDebugAndroidTest -PdisablePreDex --stacktrace
+  - travis_wait 15 ./gradlew rxkeystore:testDebugUnitTest -PdisablePreDex --stacktrace
+  - travis_wait 30 ./gradlew rxkeystore:connectedDebugAndroidTest -PdisablePreDex --stacktrace
   - ./gradlew jacocoTestReport
 
 after_success:

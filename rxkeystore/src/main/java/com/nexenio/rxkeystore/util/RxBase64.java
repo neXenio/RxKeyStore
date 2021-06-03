@@ -3,7 +3,7 @@ package com.nexenio.rxkeystore.util;
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 public final class RxBase64 {
 

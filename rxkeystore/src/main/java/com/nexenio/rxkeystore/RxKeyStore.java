@@ -1,5 +1,9 @@
 package com.nexenio.rxkeystore;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Key;
@@ -9,10 +13,10 @@ import java.util.Collections;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 
 public final class RxKeyStore {
 
@@ -67,6 +71,8 @@ public final class RxKeyStore {
     private final String provider;
 
     private KeyStore keyStore;
+
+    private Boolean isStrongBoxSupported;
 
     public RxKeyStore() {
         this(TYPE_ANDROID);
@@ -190,6 +196,27 @@ public final class RxKeyStore {
                 .flatMapCompletable(this::deleteEntry);
     }
 
+    public Completable checkIfStrongBoxIsSupported(@NonNull Context context) {
+        return Completable.fromAction(() -> {
+            if (isStrongBoxSupported != null) {
+                return;
+            }
+            isStrongBoxSupported = isStrongBoxSupported(context);
+        });
+    }
+
+    private boolean isStrongBoxSupported(@NonNull Context context) {
+        if (!type.equals(TYPE_ANDROID)) {
+            return false;
+        } else if (!shouldUseDefaultProvider() && !provider.equals(PROVIDER_ANDROID_KEY_STORE)) {
+            return false;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
+        } else {
+            return false;
+        }
+    }
+
     public String getType() {
         return type;
     }
@@ -197,6 +224,16 @@ public final class RxKeyStore {
     @Nullable
     public String getProvider() {
         return provider;
+    }
+
+    @Nullable
+    public Boolean getIsStrongBoxSupported() {
+        return isStrongBoxSupported;
+    }
+
+    public boolean getIsStrongBoxSupported(@NonNull Context context) {
+        checkIfStrongBoxIsSupported(context).blockingAwait();
+        return isStrongBoxSupported;
     }
 
     public boolean shouldUseDefaultProvider() {
