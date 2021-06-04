@@ -42,7 +42,7 @@ public class RsaCipherProvider2Test extends BaseCryptoProviderTest {
 
     @Test
     public void generateKeyPair_arabicAsLocale_emitsKeyPair() {
-        Locale actualLocale = Locale.getDefault();
+        Locale originalLocale = Locale.getDefault();
         Locale expectedLocale = new Locale("ar");
         Locale.setDefault(expectedLocale);
 
@@ -53,7 +53,7 @@ public class RsaCipherProvider2Test extends BaseCryptoProviderTest {
             Assert.assertEquals(Locale.getDefault(), expectedLocale);
         } finally {
             // clean up
-            Locale.setDefault(actualLocale);
+            Locale.setDefault(originalLocale);
         }
     }
 
