@@ -14,7 +14,7 @@ import java.util.Locale;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
-public class RxRSACryptoProvider2Test extends BaseCryptoProviderTest {
+public class RsaCipherProvider2Test extends BaseCryptoProviderTest {
 
     protected RxAsymmetricCipherProvider asymmetricCryptoProvider;
 

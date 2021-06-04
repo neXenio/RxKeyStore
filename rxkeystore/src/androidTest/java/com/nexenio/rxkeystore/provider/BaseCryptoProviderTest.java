@@ -48,7 +48,6 @@ public abstract class BaseCryptoProviderTest {
             // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
             // of that it's possible to have another BC implementation loaded in VM.
             Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-            // TODO: 03.06.21 was it intended to have it move to position 1 (so first item in the list) or was that by chance?
             Security.insertProviderAt(new BouncyCastleProvider(), originalPosition + 1);
         }
     }
