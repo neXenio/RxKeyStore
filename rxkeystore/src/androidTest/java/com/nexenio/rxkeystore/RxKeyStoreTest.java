@@ -8,7 +8,9 @@ import com.nexenio.rxkeystore.provider.cipher.symmetric.RxSymmetricCipherProvide
 import com.nexenio.rxkeystore.provider.cipher.symmetric.aes.AesCipherProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,11 +43,24 @@ public class RxKeyStoreTest {
     private static final String KEY_STORE_FILE_NAME = "keys.ks";
     private static final String KEY_STORE_PASSWORD = "password";
 
+    protected static Provider originalProvider;
+    protected static int originalPosition;
+
     private Context context;
     private RxKeyStore keyStore;
     private RxAsymmetricCipherProvider asymmetricCryptoProvider;
 
     private KeyPair defaultKeyPair;
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        setupSecurityProviders();
+    }
+
+    @AfterClass
+    public static void cleanUpAfterClass() {
+        cleanUpSecurityProviders();
+    }
 
     @Before
     public void setUp() {
@@ -53,22 +68,35 @@ public class RxKeyStoreTest {
         keyStore = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         asymmetricCryptoProvider = new RsaCipherProvider(keyStore);
 
-        setupSecurityProviders();
-
         resetKeyStore().andThen(generateDefaultKeyPair())
                 .test()
                 .assertComplete();
     }
 
-    protected void setupSecurityProviders() {
-        final Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
-        if (!(provider instanceof BouncyCastleProvider)) {
+    protected static void setupSecurityProviders() {
+        Provider[] providers = Security.getProviders();
+        for (int i = 0; i < providers.length; i++) {
+            Provider provider = providers[i];
+            if (BouncyCastleProvider.PROVIDER_NAME.equals(provider.getName())) {
+                originalProvider = provider;
+                originalPosition = i;
+            }
+        }
+        // originalProvider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+        if (!(originalProvider instanceof BouncyCastleProvider)) {
             // Android registers its own BC provider. As it might be outdated and might not include
             // all needed ciphers, we substitute it with a known BC bundled in the app.
             // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
             // of that it's possible to have another BC implementation loaded in VM.
             Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+            Security.insertProviderAt(new BouncyCastleProvider(), originalPosition + 1);
+        }
+    }
+
+    protected static void cleanUpSecurityProviders() {
+        if (originalProvider != null) {
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            Security.insertProviderAt(originalProvider, originalPosition + 1);
         }
     }
 

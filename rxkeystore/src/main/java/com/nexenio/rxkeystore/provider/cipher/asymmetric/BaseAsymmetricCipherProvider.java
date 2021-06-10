@@ -39,6 +39,7 @@ import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Calendar;
+import java.util.Locale;
 
 import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
@@ -48,6 +49,8 @@ import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+
+import static com.nexenio.rxkeystore.RxKeyStore.PROVIDER_ANDROID_KEY_STORE;
 
 public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider implements RxAsymmetricCipherProvider {
 
@@ -70,15 +73,32 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
-        return getKeyPairGeneratorInstance()
-                .flatMap(keyPairGenerator -> getKeyAlgorithmParameterSpec(alias, context)
-                        .map(algorithmParameterSpec -> {
-                            keyPairGenerator.initialize(algorithmParameterSpec);
-                            return keyPairGenerator.generateKeyPair();
-                        }))
-                .onErrorResumeNext(throwable -> Single.error(
-                        new RxKeyGenerationException("Unable to generate key pair", throwable)
-                ));
+        return Single.defer(() -> {
+            Single<KeyPair> keyPairGenerationSingle = getKeyPairGeneratorInstance()
+                    .flatMap(keyPairGenerator -> generateKeyPair(alias, context, keyPairGenerator))
+                    .onErrorResumeNext(throwable -> Single.error(
+                            new RxKeyGenerationException("Unable to generate key pair", throwable)
+                    ));
+            if (PROVIDER_ANDROID_KEY_STORE.equals(rxKeyStore.getProvider()) && Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+                // Work-around for incorrect handling of languages that go from right to left.
+                // See https://github.com/AzureAD/azure-activedirectory-library-for-android/wiki/Common-Issues-With-AndroidKeyStore for more information
+                // See https://github.com/marcin-adamczewski/media-cipher/blob/master/library/src/main/java/com/appunite/mediacipher/crypto/AESCrypterBelowM.java
+                return Single.just(Locale.getDefault())
+                        .flatMap(defaultLocale -> keyPairGenerationSingle
+                                .doOnSubscribe(disposable -> Locale.setDefault(Locale.ENGLISH))
+                                .doFinally(() -> Locale.setDefault(defaultLocale)));
+            } else {
+                return keyPairGenerationSingle;
+            }
+        });
+    }
+
+    protected Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
+        return getKeyAlgorithmParameterSpec(alias, context)
+                .map(algorithmParameterSpec -> {
+                    keyPairGenerator.initialize(algorithmParameterSpec);
+                    return keyPairGenerator.generateKeyPair();
+                });
     }
 
     @Override

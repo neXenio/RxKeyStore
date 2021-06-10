@@ -4,7 +4,9 @@ import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.asymmetric.RxAsymmetricCipherProvider;
 import com.nexenio.rxkeystore.provider.cipher.asymmetric.ec.EcCipherProvider;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -12,6 +14,16 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class EcSignatureProviderTest extends BaseSignatureProviderTest {
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        setupSecurityProviders();
+    }
+
+    @AfterClass
+    public static void cleanUpAfterClass() {
+        cleanUpSecurityProviders();
+    }
 
     @CallSuper
     @Before

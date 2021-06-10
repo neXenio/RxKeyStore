@@ -5,7 +5,9 @@ import com.nexenio.rxkeystore.provider.cipher.RxEncryptionException;
 import com.nexenio.rxkeystore.provider.cipher.asymmetric.BaseAsymmetricCipherProviderTest;
 import com.nexenio.rxkeystore.provider.cipher.asymmetric.RxAsymmetricCipherProvider;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -15,6 +17,16 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 
 public class RsaCipherProviderTest extends BaseAsymmetricCipherProviderTest {
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        setupSecurityProviders();
+    }
+
+    @AfterClass
+    public static void cleanUpAfterClass() {
+        cleanUpSecurityProviders();
+    }
 
     @CallSuper
     @Before

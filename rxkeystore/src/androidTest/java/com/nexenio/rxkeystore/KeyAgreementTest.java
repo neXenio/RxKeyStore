@@ -1,4 +1,4 @@
-package com.nexenio.rxkeystore.provider.cipher.asymmetric.rsa;
+package com.nexenio.rxkeystore;
 
 import org.junit.Test;
 
@@ -28,7 +28,7 @@ public class KeyAgreementTest {
 
     private byte[] generateSecret(PrivateKey privateKey, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeyException {
         KeyAgreement keyAgreement = KeyAgreement.getInstance("DH");
-        keyAgreement.init(privateKey);
+        keyAgreement.init(privateKey); // TODO: 03.06.21 DHPublicKey not for this KeyAgreement! on sdk 21 and 22
         keyAgreement.doPhase(publicKey, true);
         return keyAgreement.generateSecret();
     }

@@ -6,6 +6,8 @@ import com.nexenio.rxkeystore.provider.RxCryptoProvider;
 import com.nexenio.rxkeystore.provider.cipher.symmetric.RxSymmetricCipherProvider;
 import com.nexenio.rxkeystore.provider.cipher.symmetric.aes.AesCipherProvider;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -25,6 +27,16 @@ public abstract class BaseMacProviderTest extends BaseCryptoProviderTest {
     protected RxSymmetricCipherProvider symmetricCryptoProvider;
     protected SecretKey firstSecretKey;
     protected SecretKey secondSecretKey;
+
+    @BeforeClass
+    public static void setUpBeforeClass() {
+        setupSecurityProviders();
+    }
+
+    @AfterClass
+    public static void cleanUpAfterClass() {
+        cleanUpSecurityProviders();
+    }
 
     @CallSuper
     protected void setUpBeforeEachTest() {

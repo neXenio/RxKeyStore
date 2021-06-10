@@ -19,28 +19,43 @@ public abstract class BaseCryptoProviderTest {
 
     protected static final String LOREM_IPSUM_LONG = "Cras pharetra pulvinar interdum. Integer bibendum neque dolor, quis sodales dui bibendum non. Curabitur eleifend massa eros, sollicitudin porta lacus convallis eget. Mauris molestie vulputate mi. Pellentesque sit amet tortor a justo tincidunt viverra faucibus a erat. Praesent nec ante eget leo placerat congue eget id elit. Vivamus maximus consectetur malesuada. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed at bibendum lorem, ut bibendum nunc. Quisque ut justo non augue egestas rhoncus quis vitae neque. Integer feugiat diam sapien, eu tincidunt ipsum rutrum vitae. Cras pharetra pulvinar interdum. Integer bibendum neque dolor, quis sodales dui bibendum non. Curabitur eleifend massa eros, sollicitudin porta lacus convallis eget. Mauris molestie vulputate mi. Pellentesque sit amet tortor a justo tincidunt viverra faucibus a erat. Praesent nec ante eget leo placerat congue eget id elit. Vivamus maximus consectetur malesuada. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed at bibendum lorem, ut bibendum nunc. Quisque ut justo non augue egestas rhoncus quis vitae neque. Integer feugiat diam sapien, eu tincidunt ipsum rutrum vitae. Cras pharetra pulvinar interdum. Integer bibendum neque dolor, quis sodales dui bibendum non. Curabitur eleifend massa eros, sollicitudin porta lacus convallis eget. Mauris molestie vulputate mi. Pellentesque sit amet tortor a justo tincidunt viverra faucibus a erat. Praesent nec ante eget leo placerat congue eget id elit. Vivamus maximus consectetur malesuada. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed at bibendum lorem, ut bibendum nunc. Quisque ut justo non augue egestas rhoncus quis vitae neque. Integer feugiat diam sapien, eu tincidunt ipsum rutrum.";
 
+    protected static Provider originalProvider;
+    protected static int originalPosition;
+
     protected Context context;
     protected RxKeyStore keyStore;
     protected RxCryptoProvider cryptoProvider;
 
     @CallSuper
     protected void setUpBeforeEachTest() {
-        setupSecurityProviders();
-
         context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         keyStore = createKeyStore();
         cryptoProvider = createCryptoProvider(keyStore);
     }
 
-    protected void setupSecurityProviders() {
-        final Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
-        if (!(provider instanceof BouncyCastleProvider)) {
+    public static void setupSecurityProviders() {
+        Provider[] providers = Security.getProviders();
+        for (int i = 0; i < providers.length; i++) {
+            Provider provider = providers[i];
+            if (BouncyCastleProvider.PROVIDER_NAME.equals(provider.getName())) {
+                originalProvider = provider;
+                originalPosition = i;
+            }
+        }
+        if (!(originalProvider instanceof BouncyCastleProvider)) {
             // Android registers its own BC provider. As it might be outdated and might not include
             // all needed ciphers, we substitute it with a known BC bundled in the app.
             // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
             // of that it's possible to have another BC implementation loaded in VM.
             Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-            Security.insertProviderAt(new BouncyCastleProvider(), 1);
+            Security.insertProviderAt(new BouncyCastleProvider(), originalPosition + 1);
+        }
+    }
+
+    public static void cleanUpSecurityProviders() {
+        if (originalProvider != null) {
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            Security.insertProviderAt(originalProvider, originalPosition + 1);
         }
     }
 
