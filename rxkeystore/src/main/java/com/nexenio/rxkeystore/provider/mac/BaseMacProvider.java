@@ -3,8 +3,6 @@ package com.nexenio.rxkeystore.provider.mac;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
-import java.util.Arrays;
-
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
@@ -48,7 +46,7 @@ public class BaseMacProvider extends BaseCryptoProvider implements RxMacProvider
     @Override
     public Single<Boolean> getVerificationResult(@NonNull byte[] data, @NonNull byte[] signature, @NonNull SecretKey secretKey) {
         return sign(data, secretKey)
-                .map(computedSignature -> Arrays.equals(computedSignature, signature))
+                .map(computedSignature -> isEqual(computedSignature, signature))
                 .onErrorReturnItem(false);
     }
 
@@ -64,6 +62,17 @@ public class BaseMacProvider extends BaseCryptoProvider implements RxMacProvider
         }).onErrorResumeNext(throwable -> Single.error(
                 new RxMacException("Unable to get Mac instance: " + macAlgorithm, throwable)
         ));
+    }
+
+    public static boolean isEqual(byte[] a, byte[] b) {
+        if (a.length != b.length) {
+            return false;
+        }
+        byte result = 0;
+        for (byte i = 0; i < a.length; i++) {
+            result |= (byte) (a[i] ^ b[i]);
+        }
+        return result == 0;
     }
 
     public String getMacAlgorithm() {

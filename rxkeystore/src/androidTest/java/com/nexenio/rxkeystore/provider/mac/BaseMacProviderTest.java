@@ -11,7 +11,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import javax.crypto.SecretKey;
 
@@ -66,7 +65,7 @@ public abstract class BaseMacProviderTest extends BaseCryptoProviderTest {
     public void sign_subsequentCallsWithSameKey_emitsSameSignature() {
         Single<byte[]> signSingle = macProvider.sign(MESSAGE, firstSecretKey);
 
-        Single.zip(signSingle, signSingle, Arrays::equals)
+        Single.zip(signSingle, signSingle, BaseMacProvider::isEqual)
                 .test()
                 .assertValue(true);
     }
