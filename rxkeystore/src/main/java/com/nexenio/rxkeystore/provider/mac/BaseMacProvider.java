@@ -1,12 +1,13 @@
 package com.nexenio.rxkeystore.provider.mac;
 
+import androidx.annotation.NonNull;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 
-import androidx.annotation.NonNull;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -22,9 +23,13 @@ public class BaseMacProvider extends BaseCryptoProvider implements RxMacProvider
     @Override
     public Single<byte[]> sign(@NonNull byte[] data, @NonNull SecretKey secretKey) {
         return getMacInstance()
-                .map(mac -> {
-                    mac.init(secretKey);
-                    return mac.doFinal(data);
+                .map(macInstance -> {
+                    byte[] mac;
+                    synchronized (macInstance) {
+                        macInstance.init(secretKey);
+                        mac = macInstance.doFinal(data);
+                    }
+                    return mac;
                 })
                 .onErrorResumeNext(throwable -> Single.error(
                         new RxMacException("Unable generate message authentication code", throwable)
@@ -50,6 +55,9 @@ public class BaseMacProvider extends BaseCryptoProvider implements RxMacProvider
                 .onErrorReturnItem(false);
     }
 
+    /**
+     * Note: {@link Mac} instances are not thread safe!
+     */
     protected Single<Mac> getMacInstance() {
         return Single.defer(() -> {
             Mac mac;

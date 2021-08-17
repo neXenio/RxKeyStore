@@ -5,6 +5,9 @@ import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.BaseCipherProvider;
 
@@ -14,8 +17,6 @@ import java.security.spec.AlgorithmParameterSpec;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
@@ -32,8 +33,12 @@ public abstract class BaseSymmetricCipherProvider extends BaseCipherProvider imp
         return getKeyGeneratorInstance()
                 .flatMap(keyGenerator -> getKeyAlgorithmParameterSpec(alias, context)
                         .map(algorithmParameterSpec -> {
-                            keyGenerator.init(algorithmParameterSpec);
-                            return keyGenerator.generateKey();
+                            SecretKey secretKey;
+                            synchronized (keyGenerator) {
+                                keyGenerator.init(algorithmParameterSpec);
+                                secretKey = keyGenerator.generateKey();
+                            }
+                            return secretKey;
                         }));
     }
 
@@ -70,6 +75,9 @@ public abstract class BaseSymmetricCipherProvider extends BaseCipherProvider imp
 
     protected abstract String[] getEncryptionPaddings();
 
+    /**
+     * Note: {@link KeyGenerator} instances are not thread safe!
+     */
     protected Single<KeyGenerator> getKeyGeneratorInstance() {
         return Single.defer(() -> {
             KeyGenerator keyGenerator;

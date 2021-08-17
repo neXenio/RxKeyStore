@@ -4,6 +4,10 @@ import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
@@ -12,9 +16,6 @@ import java.security.Key;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Single;
 
 public abstract class BaseCipherProvider extends BaseCryptoProvider implements RxCipherProvider {
@@ -31,9 +32,14 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
     public Single<Pair<byte[], byte[]>> encrypt(@NonNull byte[] data, @NonNull Key key) {
         return getCipherInstance()
                 .flatMap(cipher -> Single.fromCallable(() -> {
-                    cipher.init(Cipher.ENCRYPT_MODE, key);
-                    byte[] encryptedData = cipher.doFinal(data);
-                    return new Pair<>(encryptedData, cipher.getIV());
+                    byte[] encryptedData;
+                    byte[] iv;
+                    synchronized (cipher) {
+                        cipher.init(Cipher.ENCRYPT_MODE, key);
+                        encryptedData = cipher.doFinal(data);
+                        iv = cipher.getIV();
+                    }
+                    return new Pair<>(encryptedData, iv);
                 })).onErrorResumeNext(throwable -> Single.error(
                         new RxEncryptionException(throwable)
                 ));
@@ -44,8 +50,12 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
         return getCipherInstance()
                 .flatMap(cipher -> Single.fromCallable(() -> {
                     IvParameterSpec parameterSpec = new IvParameterSpec(initializationVector);
-                    cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
-                    return cipher.doFinal(data);
+                    byte[] encryptedData;
+                    synchronized (cipher) {
+                        cipher.init(Cipher.ENCRYPT_MODE, key, parameterSpec);
+                        encryptedData = cipher.doFinal(data);
+                    }
+                    return encryptedData;
                 })).onErrorResumeNext(throwable -> Single.error(
                         new RxEncryptionException(throwable)
                 ));
@@ -55,13 +65,17 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
     public Single<byte[]> decrypt(@NonNull byte[] data, @Nullable byte[] initializationVector, @NonNull Key key) {
         return getCipherInstance()
                 .flatMap(cipher -> Single.fromCallable(() -> {
-                    if (initializationVector != null) {
-                        IvParameterSpec ivParameterSpec = new IvParameterSpec(initializationVector);
-                        cipher.init(Cipher.DECRYPT_MODE, key, ivParameterSpec);
-                    } else {
-                        cipher.init(Cipher.DECRYPT_MODE, key);
+                    byte[] decryptedData;
+                    synchronized (cipher) {
+                        if (initializationVector != null) {
+                            IvParameterSpec ivParameterSpec = new IvParameterSpec(initializationVector);
+                            cipher.init(Cipher.DECRYPT_MODE, key, ivParameterSpec);
+                        } else {
+                            cipher.init(Cipher.DECRYPT_MODE, key);
+                        }
+                        decryptedData = cipher.doFinal(data);
                     }
-                    return cipher.doFinal(data);
+                    return decryptedData;
                 })).onErrorResumeNext(throwable -> Single.error(
                         new RxDecryptionException(throwable)
                 ));
@@ -70,6 +84,9 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
     @RequiresApi(api = Build.VERSION_CODES.M)
     protected abstract Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias);
 
+    /**
+     * Note: {@link Cipher} instances are not thread safe!
+     */
     protected Single<Cipher> getCipherInstance() {
         return Single.defer(() -> {
             Cipher cipher;

@@ -6,6 +6,9 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+
 import com.nexenio.rxkeystore.KeyStoreEntryNotAvailableException;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.BaseCipherProvider;
@@ -44,8 +47,6 @@ import java.util.Locale;
 import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
@@ -62,9 +63,13 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
     public Single<byte[]> generateSecret(@NonNull PrivateKey privateKey, @NonNull PublicKey publicKey) {
         return getKeyAgreementInstance()
                 .flatMap(keyAgreement -> Single.fromCallable(() -> {
-                    keyAgreement.init(privateKey);
-                    keyAgreement.doPhase(publicKey, true);
-                    return keyAgreement.generateSecret();
+                    byte[] secret;
+                    synchronized (keyAgreement) {
+                        keyAgreement.init(privateKey);
+                        keyAgreement.doPhase(publicKey, true);
+                        secret = keyAgreement.generateSecret();
+                    }
+                    return secret;
                 }))
                 .onErrorResumeNext(throwable -> Single.error(
                         new RxKeyGenerationException("Unable to generate secret", throwable)
@@ -96,8 +101,12 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
     protected Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
         return getKeyAlgorithmParameterSpec(alias, context)
                 .map(algorithmParameterSpec -> {
-                    keyPairGenerator.initialize(algorithmParameterSpec);
-                    return keyPairGenerator.generateKeyPair();
+                    KeyPair keyPair;
+                    synchronized (keyPairGenerator) {
+                        keyPairGenerator.initialize(algorithmParameterSpec);
+                        keyPair = keyPairGenerator.generateKeyPair();
+                    }
+                    return keyPair;
                 });
     }
 
@@ -284,6 +293,9 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
         });
     }
 
+    /**
+     * Note: {@link KeyAgreement} instances are not thread safe!
+     */
     protected Single<KeyPairGenerator> getKeyPairGeneratorInstance() {
         return Single.defer(() -> {
             KeyPairGenerator keyPairGenerator;
@@ -298,6 +310,9 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
 
     protected abstract String getKeyAgreementAlgorithm();
 
+    /**
+     * Note: {@link KeyAgreement} instances are not thread safe!
+     */
     protected Single<KeyAgreement> getKeyAgreementInstance() {
         return Single.defer(() -> {
             KeyAgreement keyAgreement;
