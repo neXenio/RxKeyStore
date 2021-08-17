@@ -1,5 +1,7 @@
 package com.nexenio.rxkeystore.provider.signature;
 
+import androidx.annotation.NonNull;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
@@ -7,7 +9,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 
-import androidx.annotation.NonNull;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -23,10 +24,14 @@ public class BaseSignatureProvider extends BaseCryptoProvider implements RxSigna
     @Override
     public Single<byte[]> sign(@NonNull byte[] data, @NonNull PrivateKey privateKey) {
         return getSignatureInstance()
-                .map(signature -> {
-                    signature.initSign(privateKey);
-                    signature.update(data);
-                    return signature.sign();
+                .map(signatureInstance -> {
+                    byte[] signature;
+                    synchronized (signatureInstance) {
+                        signatureInstance.initSign(privateKey);
+                        signatureInstance.update(data);
+                        signature = signatureInstance.sign();
+                    }
+                    return signature;
                 }).onErrorResumeNext(throwable -> Single.error(
                         new RxSignatureException("Unable to create signature", throwable)
                 ));
@@ -48,12 +53,19 @@ public class BaseSignatureProvider extends BaseCryptoProvider implements RxSigna
     public Single<Boolean> getVerificationResult(@NonNull byte[] data, @NonNull byte[] signature, @NonNull PublicKey publicKey) {
         return getSignatureInstance()
                 .map(signatureInstance -> {
-                    signatureInstance.initVerify(publicKey);
-                    signatureInstance.update(data);
-                    return signatureInstance.verify(signature);
+                    boolean verificationResult;
+                    synchronized (signatureInstance) {
+                        signatureInstance.initVerify(publicKey);
+                        signatureInstance.update(data);
+                        verificationResult = signatureInstance.verify(signature);
+                    }
+                    return verificationResult;
                 }).onErrorReturnItem(false);
     }
 
+    /**
+     * Note: {@link Signature} instances are not thread safe!
+     */
     protected Single<Signature> getSignatureInstance() {
         return Single.defer(() -> {
             Signature signature;

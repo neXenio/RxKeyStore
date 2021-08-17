@@ -1,12 +1,13 @@
 package com.nexenio.rxkeystore.provider.hash;
 
+import androidx.annotation.NonNull;
+
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 import com.nexenio.rxkeystore.provider.mac.RxMacException;
 
 import java.security.MessageDigest;
 
-import androidx.annotation.NonNull;
 import io.reactivex.rxjava3.core.Single;
 
 public class BaseHashProvider extends BaseCryptoProvider implements RxHashProvider {
@@ -22,14 +23,21 @@ public class BaseHashProvider extends BaseCryptoProvider implements RxHashProvid
     public Single<byte[]> hash(@NonNull byte[] data) {
         return getMessageDigestInstance()
                 .map(messageDigest -> {
-                    messageDigest.update(data);
-                    return messageDigest.digest();
+                    byte[] digest;
+                    synchronized (messageDigest) {
+                        messageDigest.update(data);
+                        digest = messageDigest.digest();
+                    }
+                    return digest;
                 })
                 .onErrorResumeNext(throwable -> Single.error(
                         new RxHashException("Unable generate hash", throwable)
                 ));
     }
 
+    /**
+     * Note: {@link MessageDigest} instances are not thread safe!
+     */
     protected Single<MessageDigest> getMessageDigestInstance() {
         return Single.defer(() -> {
             MessageDigest messageDigest;
