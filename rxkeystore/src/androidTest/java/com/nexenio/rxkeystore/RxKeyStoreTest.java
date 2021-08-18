@@ -41,7 +41,7 @@ public class RxKeyStoreTest {
     private static final String ALIAS_NEW = "new";
 
     private static final String KEY_STORE_FILE_NAME = "keys.ks";
-    private static final String KEY_STORE_PASSWORD = "password";
+    private static final char[] KEY_STORE_PASSWORD_CHARS = "password".toCharArray();
 
     protected static Provider originalProvider;
     protected static int originalPosition;
@@ -270,11 +270,11 @@ public class RxKeyStoreTest {
         // create a valid key store file
         RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
-        store.save(outputStream, KEY_STORE_PASSWORD).blockingAwait();
+        store.save(outputStream, KEY_STORE_PASSWORD_CHARS).blockingAwait();
 
         // attempt to load the key store from file
         InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
-        store.load(inputStream, KEY_STORE_PASSWORD)
+        store.load(inputStream, KEY_STORE_PASSWORD_CHARS)
                 .test()
                 .assertComplete();
     }
@@ -291,11 +291,11 @@ public class RxKeyStoreTest {
 
         // create a valid key store file
         OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
-        store.save(outputStream, KEY_STORE_PASSWORD).blockingAwait();
+        store.save(outputStream, KEY_STORE_PASSWORD_CHARS).blockingAwait();
 
         // load the key store from file
         InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
-        store.load(inputStream, KEY_STORE_PASSWORD).blockingAwait();
+        store.load(inputStream, KEY_STORE_PASSWORD_CHARS).blockingAwait();
 
         // check if the key can be restored
         RxSymmetricCipherProvider restoredCryptoProvider = new AesCipherProvider(store);
@@ -315,7 +315,7 @@ public class RxKeyStoreTest {
         // attempt to load the file as key store
         InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
         RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
-        store.load(inputStream, KEY_STORE_PASSWORD)
+        store.load(inputStream, KEY_STORE_PASSWORD_CHARS)
                 .test()
                 .assertError(RxKeyStoreException.class);
     }
@@ -325,11 +325,11 @@ public class RxKeyStoreTest {
         // create a valid key store file
         RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         OutputStream outputStream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
-        store.save(outputStream, KEY_STORE_PASSWORD).blockingAwait();
+        store.save(outputStream, KEY_STORE_PASSWORD_CHARS).blockingAwait();
 
         // attempt to load the key store with a different password
         InputStream inputStream = context.openFileInput(KEY_STORE_FILE_NAME);
-        store.load(inputStream, "wrong password")
+        store.load(inputStream, "wrong password".toCharArray())
                 .test()
                 .assertError(RxKeyStoreException.class);
     }
@@ -338,7 +338,7 @@ public class RxKeyStoreTest {
     public void save_serializableKeyStore_savesKeyStore() throws Exception {
         RxKeyStore store = new RxKeyStore(RxKeyStore.TYPE_BKS, RxKeyStore.PROVIDER_BOUNCY_CASTLE);
         OutputStream stream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
-        store.save(stream, KEY_STORE_PASSWORD)
+        store.save(stream, KEY_STORE_PASSWORD_CHARS)
                 .test()
                 .assertComplete();
     }
@@ -347,7 +347,7 @@ public class RxKeyStoreTest {
     public void save_nonSerializableKeyStore_emitsError() throws Exception {
         RxKeyStore store = new RxKeyStore(); // defaults to the Android key store
         OutputStream stream = context.openFileOutput(KEY_STORE_FILE_NAME, Context.MODE_PRIVATE);
-        store.save(stream, KEY_STORE_PASSWORD)
+        store.save(stream, KEY_STORE_PASSWORD_CHARS)
                 .test()
                 .assertError(RxKeyStoreException.class);
     }
