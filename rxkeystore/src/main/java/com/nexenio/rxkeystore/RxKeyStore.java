@@ -116,10 +116,7 @@ public final class RxKeyStore {
      */
     @Deprecated
     public Completable load(@NonNull InputStream stream, @Nullable String password) {
-        return Completable.defer(() -> {
-            char[] passwordChars = password != null ? password.toCharArray() : null;
-            return load(stream, passwordChars);
-        });
+        return load(stream, password != null ? password.toCharArray() : null);
     }
 
     /**
@@ -137,11 +134,8 @@ public final class RxKeyStore {
      */
     public Completable load(@NonNull InputStream stream, @Nullable char[] passwordChars) {
         return getInitializedKeyStore()
-                .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> {
-                    initializedKeyStore.load(stream, passwordChars);
-                })).onErrorResumeNext(throwable -> Completable.error(
-                        new RxKeyStoreException("Unable to load key store", throwable)
-                ));
+                .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> initializedKeyStore.load(stream, passwordChars)))
+                .onErrorResumeNext(throwable -> Completable.error(new RxKeyStoreException("Unable to load key store", throwable)));
     }
 
     /**
@@ -156,10 +150,7 @@ public final class RxKeyStore {
      */
     @Deprecated
     public Completable save(@NonNull OutputStream stream, @Nullable String password) {
-        return Completable.defer(() -> {
-            char[] passwordChars = password != null ? password.toCharArray() : null;
-            return save(stream, passwordChars);
-        });
+        return save(stream, password != null ? password.toCharArray() : null);
     }
 
     /**
@@ -171,11 +162,8 @@ public final class RxKeyStore {
      */
     public Completable save(@NonNull OutputStream stream, @Nullable char[] passwordChars) {
         return getInitializedKeyStore()
-                .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> {
-                    initializedKeyStore.store(stream, passwordChars);
-                })).onErrorResumeNext(throwable -> Completable.error(
-                        new RxKeyStoreException("Unable to save key store", throwable)
-                ));
+                .flatMapCompletable(initializedKeyStore -> Completable.fromAction(() -> initializedKeyStore.store(stream, passwordChars)))
+                .onErrorResumeNext(throwable -> Completable.error(new RxKeyStoreException("Unable to save key store", throwable)));
     }
 
     public Flowable<String> getAliases() {
