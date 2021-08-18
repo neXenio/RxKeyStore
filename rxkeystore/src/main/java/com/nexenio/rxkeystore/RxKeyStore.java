@@ -145,7 +145,7 @@ public final class RxKeyStore {
     }
 
     /**
-     * Stores this key store to the given output stream, and protects its integrity with the * given
+     * Stores this key store to the given output stream, and protects its integrity with the given
      * password.
      *
      * @param stream   the output stream to which this keystore is written.
