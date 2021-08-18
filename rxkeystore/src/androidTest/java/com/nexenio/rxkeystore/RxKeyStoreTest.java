@@ -41,8 +41,7 @@ public class RxKeyStoreTest {
     private static final String ALIAS_NEW = "new";
 
     private static final String KEY_STORE_FILE_NAME = "keys.ks";
-    private static final String KEY_STORE_PASSWORD = "password";
-    private static final char[] KEY_STORE_PASSWORD_CHARS = KEY_STORE_PASSWORD.toCharArray();
+    private static final char[] KEY_STORE_PASSWORD_CHARS = "password".toCharArray();
 
     protected static Provider originalProvider;
     protected static int originalPosition;
