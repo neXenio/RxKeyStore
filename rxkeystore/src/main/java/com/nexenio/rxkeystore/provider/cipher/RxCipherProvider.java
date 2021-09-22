@@ -24,4 +24,6 @@ public interface RxCipherProvider extends RxCryptoProvider {
 
     Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context);
 
+    Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, int keyPurposes, @NonNull Context context);
+
 }

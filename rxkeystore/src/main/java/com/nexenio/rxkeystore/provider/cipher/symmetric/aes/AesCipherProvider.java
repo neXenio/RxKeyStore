@@ -3,14 +3,14 @@ package com.nexenio.rxkeystore.provider.cipher.symmetric.aes;
 import android.content.Context;
 import android.os.Build;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.symmetric.BaseSymmetricCipherProvider;
 
 import javax.crypto.SecretKey;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Single;
 
 import static com.nexenio.rxkeystore.RxKeyStore.BLOCK_MODE_GCM;
@@ -41,6 +41,11 @@ public class AesCipherProvider extends BaseSymmetricCipherProvider {
                     }
                     return secretKey;
                 });
+    }
+
+    @Override
+    public Single<SecretKey> generateKey(@NonNull String alias, @Nullable Integer keyPurposes, @NonNull Context context) {
+        return generateKey(alias, context);
     }
 
     @Override
