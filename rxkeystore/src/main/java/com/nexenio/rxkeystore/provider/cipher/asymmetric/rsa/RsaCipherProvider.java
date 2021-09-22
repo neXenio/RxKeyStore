@@ -1,6 +1,7 @@
 package com.nexenio.rxkeystore.provider.cipher.asymmetric.rsa;
 
 import android.content.Context;
+import android.os.Build;
 
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.asymmetric.BaseAsymmetricCipherProvider;
@@ -42,6 +43,21 @@ public class RsaCipherProvider extends BaseAsymmetricCipherProvider {
                 return Single.fromCallable(() -> new RSAKeyGenParameterSpec(KEY_SIZE, RSAKeyGenParameterSpec.F4));
             } else {
                 return super.getKeyAlgorithmParameterSpec(alias, context);
+            }
+        });
+    }
+
+    @Override
+    public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, int keyPurposes, @NonNull Context context) {
+        return Single.defer(() -> {
+            if (RxKeyStore.PROVIDER_BOUNCY_CASTLE.equals(rxKeyStore.getProvider())) {
+                return Single.fromCallable(() -> new RSAKeyGenParameterSpec(KEY_SIZE, RSAKeyGenParameterSpec.F4));
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    return super.getKeyAlgorithmParameterSpec(alias, keyPurposes, context);
+                } else {
+                    return super.getKeyAlgorithmParameterSpec(alias, context);
+                }
             }
         });
     }

@@ -38,6 +38,14 @@ public class EcCipherProvider extends BaseAsymmetricCipherProvider {
         return Single.fromCallable(() -> new ECGenParameterSpec(CURVE_NAME));
     }
 
+    /**
+     * Note: keyPurposes are not being used here.
+     */
+    @Override
+    public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, int keyPurposes, @NonNull Context context) {
+        return getKeyAlgorithmParameterSpec(alias, context);
+    }
+
     @Override
     protected String[] getBlockModes() {
         return BLOCK_MODES;

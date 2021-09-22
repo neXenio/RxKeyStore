@@ -6,9 +6,6 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-
 import com.nexenio.rxkeystore.KeyStoreEntryNotAvailableException;
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.BaseCipherProvider;
@@ -47,6 +44,9 @@ import java.util.Locale;
 import javax.crypto.KeyAgreement;
 import javax.security.auth.x500.X500Principal;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
@@ -78,9 +78,14 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
 
     @Override
     public Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context) {
+        return generateKeyPair(alias, null, context);
+    }
+
+    @Override
+    public Single<KeyPair> generateKeyPair(@NonNull String alias, @Nullable Integer keyPurposes, @NonNull Context context) {
         return Single.defer(() -> {
             Single<KeyPair> keyPairGenerationSingle = getKeyPairGeneratorInstance()
-                    .flatMap(keyPairGenerator -> generateKeyPair(alias, context, keyPairGenerator))
+                    .flatMap(keyPairGenerator -> generateKeyPair(alias, keyPurposes, context, keyPairGenerator))
                     .onErrorResumeNext(throwable -> Single.error(
                             new RxKeyGenerationException("Unable to generate key pair", throwable)
                     ));
@@ -98,29 +103,39 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
         });
     }
 
-    protected Single<KeyPair> generateKeyPair(@NonNull String alias, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
-        return getKeyAlgorithmParameterSpec(alias, context)
-                .map(algorithmParameterSpec -> {
-                    KeyPair keyPair;
-                    synchronized (keyPairGenerator) {
-                        keyPairGenerator.initialize(algorithmParameterSpec);
-                        keyPair = keyPairGenerator.generateKeyPair();
-                    }
-                    return keyPair;
-                });
+    protected Single<KeyPair> generateKeyPair(@NonNull String alias, @Nullable Integer keyPurposes, @NonNull Context context, @NonNull KeyPairGenerator keyPairGenerator) {
+        return Single.defer(() -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                int purposes;
+                if (keyPurposes == null) {
+                    purposes = KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY;
+                } else {
+                    purposes = keyPurposes;
+                }
+                return getKeyAlgorithmParameterSpec(alias, purposes, context);
+            } else {
+                return getKeyAlgorithmParameterSpec(alias, context);
+            }
+        }).map(algorithmParameterSpec -> {
+            KeyPair keyPair;
+            synchronized (keyPairGenerator) {
+                keyPairGenerator.initialize(algorithmParameterSpec);
+                keyPair = keyPairGenerator.generateKeyPair();
+            }
+            return keyPair;
+        });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, int keyPurposes, @NonNull Context context) {
+        return rxKeyStore.checkIfStrongBoxIsSupported(context)
+                .andThen(Single.defer(() -> getKeyGenParameterSpec(alias, keyPurposes)));
     }
 
     @Override
     public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
         return rxKeyStore.checkIfStrongBoxIsSupported(context)
-                .andThen(Single.defer(() -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        return getKeyGenParameterSpec(alias);
-                    } else {
-                        // TODO: 2019-07-26 test this implementation, signature verification didn't work
-                        return getKeyPairGeneratorSpec(alias, context);
-                    }
-                }));
+                .andThen(Single.defer(() -> getKeyPairGeneratorSpec(alias, context))); // TODO: 2019-07-26 test this implementation, signature verification didn't work
     }
 
     protected Single<KeyPairGeneratorSpec> getKeyPairGeneratorSpec(@NonNull String alias, @NonNull Context context) {
@@ -141,10 +156,8 @@ public abstract class BaseAsymmetricCipherProvider extends BaseCipherProvider im
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    @Override
-    protected Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias) {
+    protected Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias, int keyPurposes) {
         return Single.fromCallable(() -> {
-            int keyPurposes = KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY;
             KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(alias, keyPurposes)
                     .setBlockModes(getBlockModes())
                     .setEncryptionPaddings(getEncryptionPaddings())

@@ -5,9 +5,6 @@ import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
-
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.cipher.BaseCipherProvider;
 
@@ -17,6 +14,9 @@ import java.security.spec.AlgorithmParameterSpec;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
@@ -30,35 +30,51 @@ public abstract class BaseSymmetricCipherProvider extends BaseCipherProvider imp
 
     @Override
     public Single<SecretKey> generateKey(@NonNull String alias, @NonNull Context context) {
-        return getKeyGeneratorInstance()
-                .flatMap(keyGenerator -> getKeyAlgorithmParameterSpec(alias, context)
-                        .map(algorithmParameterSpec -> {
-                            SecretKey secretKey;
-                            synchronized (keyGenerator) {
-                                keyGenerator.init(algorithmParameterSpec);
-                                secretKey = keyGenerator.generateKey();
-                            }
-                            return secretKey;
-                        }));
+        return generateKey(alias, null, context);
     }
 
     @Override
+    public Single<SecretKey> generateKey(@NonNull String alias, @Nullable Integer keyPurposes, @NonNull Context context) {
+        return Single.defer(() -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                int purposes;
+                if (keyPurposes == null) {
+                    purposes = KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY;
+                } else {
+                    purposes = keyPurposes;
+                }
+                return getKeyGeneratorInstance()
+                        .flatMap(keyGenerator -> getKeyAlgorithmParameterSpec(alias, purposes, context)
+                                .map(algorithmParameterSpec -> {
+                                    SecretKey secretKey;
+                                    synchronized (keyGenerator) {
+                                        keyGenerator.init(algorithmParameterSpec);
+                                        secretKey = keyGenerator.generateKey();
+                                    }
+                                    return secretKey;
+                                }));
+            } else {
+                return Single.error(new IllegalStateException("Symmetric keys are not supported by the keystore on Android versions before M"));
+            }
+        });
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
     public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, @NonNull Context context) {
         return rxKeyStore.checkIfStrongBoxIsSupported(context)
-                .andThen(Single.defer(() -> {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        return getKeyGenParameterSpec(alias);
-                    } else {
-                        return Single.error(new IllegalStateException("Symmetric keys are not supported by the keystore on Android versions before M"));
-                    }
-                }));
+                .andThen(Single.defer(() -> getKeyGenParameterSpec(alias, KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)));
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public Single<AlgorithmParameterSpec> getKeyAlgorithmParameterSpec(@NonNull String alias, int keyPurposes, @NonNull Context context) {
+        return rxKeyStore.checkIfStrongBoxIsSupported(context)
+                .andThen(Single.defer(() -> getKeyGenParameterSpec(alias, keyPurposes)));
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
-    protected Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias) {
+    protected Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias, int keyPurposes) {
         return Single.fromCallable(() -> {
-            int keyPurposes = KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY;
             KeyGenParameterSpec.Builder builder = new KeyGenParameterSpec.Builder(alias, keyPurposes)
                     .setBlockModes(getBlockModes())
                     .setEncryptionPaddings(getEncryptionPaddings());

@@ -4,10 +4,6 @@ import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.util.Pair;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-
 import com.nexenio.rxkeystore.RxKeyStore;
 import com.nexenio.rxkeystore.provider.BaseCryptoProvider;
 
@@ -16,6 +12,9 @@ import java.security.Key;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import io.reactivex.rxjava3.core.Single;
 
 public abstract class BaseCipherProvider extends BaseCryptoProvider implements RxCipherProvider {
@@ -82,7 +81,7 @@ public abstract class BaseCipherProvider extends BaseCryptoProvider implements R
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
-    protected abstract Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias);
+    protected abstract Single<KeyGenParameterSpec> getKeyGenParameterSpec(@NonNull String alias, int keyPurposes);
 
     /**
      * Note: {@link Cipher} instances are not thread safe!
