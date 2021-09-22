@@ -40,6 +40,9 @@ public class RsaCipherProvider2Test extends BaseCryptoProviderTest {
         return new RsaCipherProvider(keyStore);
     }
 
+    /**
+     * Test the fix for locale change on the default security provider with a different key store.
+     */
     @Test
     public void generateKeyPair_arabicAsLocale_emitsKeyPair() {
         Locale originalLocale = Locale.getDefault();
